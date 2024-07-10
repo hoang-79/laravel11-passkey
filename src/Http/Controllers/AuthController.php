@@ -14,13 +14,22 @@ use Webauthn\PublicKeyCredentialRpEntity;
 use Webauthn\PublicKeyCredentialUserEntity;
 use Webauthn\AuthenticatorAttestationResponse;
 use Webauthn\AuthenticatorAssertionResponse;
-use Webauthn\PublicKeyCredentialLoader;
+use Symfony\Component\Serializer\Serializer;
+use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Hoang\PasskeyAuth\Models\TemporaryEmailOtp;
 use Hoang\PasskeyAuth\Mail\SendOtpMail;
 use App\Models\User;
 
 class AuthController extends Controller
 {
+    protected $serializer;
+
+    public function __construct()
+    {
+        $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
+    }
+
     public function showLoginForm()
     {
         return view('passkeyauth::login');
@@ -99,7 +108,7 @@ class AuthController extends Controller
             random_bytes(32),
             [
                 [
-                    'type' => PublicKeyCredentialSource::TYPE_PUBLIC_KEY,
+                    'type' => \Cose\Algorithms::COSE_ALGORITHM_ES256,
                     'alg' => -7,
                 ],
             ],
@@ -139,8 +148,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        $loader = new PublicKeyCredentialLoader();
-        $attestation = $loader->load($request->input('credential'));
+        $attestation = $this->serializer->deserialize($request->input('credential'), AuthenticatorAttestationResponse::class, 'json');
         $options = unserialize(session('webauthn.register'));
 
         $authenticator = new AuthenticatorAttestationResponse();
@@ -155,8 +163,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        $loader = new PublicKeyCredentialLoader();
-        $assertion = $loader->load($request->input('credential'));
+        $assertion = $this->serializer->deserialize($request->input('credential'), AuthenticatorAssertionResponse::class, 'json');
         $options = unserialize(session('webauthn.authenticate'));
 
         $authenticator = new AuthenticatorAssertionResponse();
