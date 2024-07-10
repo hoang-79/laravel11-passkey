@@ -10,17 +10,30 @@ class LoginForm extends Component
     public $email = '';
     public $otp = '';
     public $stage = 'login';
+    public $webauthnOptions;
 
     public function submit()
     {
         if ($this->stage == 'login') {
-            // Check if the email exists and trigger WebAuthn
+            $response = Http::post('/login', ['email' => $this->email]);
 
-            $this->stage = 'otp';
+            if ($response->status() == 200) {
+                $this->webauthnOptions = $response->json();
+                $this->stage = 'webauthn';
+            } else {
+                session()->flash('error', $response->json()['message']);
+            }
         } elseif ($this->stage == 'otp') {
-            // Verify OTP
+            $response = Http::post('/verify-otp', [
+                'email' => $this->email,
+                'otp' => $this->otp,
+            ]);
 
-            $this->stage = 'register';
+            if ($response->status() == 200) {
+                $this->stage = 'register';
+            } else {
+                session()->flash('error', $response->json()['message']);
+            }
         }
     }
 
