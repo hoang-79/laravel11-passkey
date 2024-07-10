@@ -104,7 +104,7 @@ class AuthController extends Controller
         );
 
         $authenticatorSelection = new AuthenticatorSelectionCriteria();
-
+        dump($authenticatorSelection);
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
             $userEntity,
