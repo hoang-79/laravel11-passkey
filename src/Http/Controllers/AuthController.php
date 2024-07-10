@@ -17,6 +17,7 @@ use Webauthn\AuthenticatorAssertionResponse;
 use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
+use Webauthn\AuthenticatorSelectionCriteria;
 use Hoang\PasskeyAuth\Models\TemporaryEmailOtp;
 use Hoang\PasskeyAuth\Mail\SendOtpMail;
 use App\Models\User;
@@ -102,6 +103,8 @@ class AuthController extends Controller
             $user->name
         );
 
+        $authenticatorSelection = new AuthenticatorSelectionCriteria();
+
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
             $userEntity,
@@ -113,7 +116,7 @@ class AuthController extends Controller
                 ],
             ],
             60000,
-            ['internal'],
+            $authenticatorSelection,
             ['direct']
         );
 
