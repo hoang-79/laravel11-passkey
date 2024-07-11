@@ -106,6 +106,7 @@ class AuthController extends Controller
         $authenticatorSelection = new AuthenticatorSelectionCriteria(
             null, // authenticatorAttachment (optional)
             'preferred', // userVerification
+            null,
             false // requireResidentKey
         );
         dump($authenticatorSelection);
