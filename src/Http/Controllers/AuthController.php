@@ -111,24 +111,23 @@ class AuthController extends Controller
         $challenge = random_bytes(32);
 
         $publicKeyCredentialParametersList = [
-            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256K), // More interesting algorithm
-            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256),  //      ||
-            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_RS256),  //      ||
-            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_PS256),  //      \/
-            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ED256),  // Less interesting algorithm
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256K),
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256),
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_RS256),
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_PS256),
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ED256),
         ];
-
 
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
             $userEntity,
             $challenge,
             $publicKeyCredentialParametersList,
-            $authenticatorSelection, // AuthenticatorSelectionCriteria-Objekt
-            null, // Attestation
-            [], // ExcludeCredentials
-            60000, // Timeout
-            new AuthenticationExtensions() // Extensions
+            $authenticatorSelection,
+            null,
+            [],
+            60000,
+            new AuthenticationExtensions()
         );
 
         session(['webauthn.register' => serialize($options)]);
@@ -140,17 +139,15 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        $rpEntity = new PublicKeyCredentialRpEntity(
-            config('app.name'),
-            'localhost'
-        );
+        $challenge = random_bytes(32);
 
         $options = new PublicKeyCredentialRequestOptions(
-            random_bytes(32),
+            $challenge,
+            'localhost',
+            $user->credentials->pluck('id')->toArray(),
+            'preferred',
             60000,
-            $rpEntity,
-            $user->credentialIds,
-            ['internal']
+            new AuthenticationExtensions()
         );
 
         session(['webauthn.authenticate' => serialize($options)]);
