@@ -31,21 +31,6 @@ class AuthController extends Controller
         $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
     }
 
-    // Debugging-Methode
-    public function debugPublicKeyCredentialCreationOptions(
-        PublicKeyCredentialRpEntity $rp,
-        PublicKeyCredentialUserEntity $user,
-        string $challenge,
-        array $pubKeyCredParams,
-        ?AuthenticatorSelectionCriteria $authenticatorSelection,
-        ?string $attestation,
-        array $excludeCredentials,
-        ?int $timeout,
-        ?AuthenticationExtensions $extensions
-    ) {
-        dump($rp, $user, $challenge, $pubKeyCredParams, $authenticatorSelection, $attestation, $excludeCredentials, $timeout, $extensions);
-    }
-
     public function showLoginForm()
     {
         return view('passkeyauth::login');
@@ -118,42 +103,12 @@ class AuthController extends Controller
             $user->name
         );
 
-        // AuthenticatorSelectionCriteria als Array definieren
-        $authenticatorSelectionArray = [
-            'authenticatorAttachment' => null,
-            'userVerification' => 'preferred',
-            'residentKey' => null,
-            'requireResidentKey' => false
-        ];
-
-        // AuthenticatorSelectionCriteria-Objekt erstellen
         $authenticatorSelection = new AuthenticatorSelectionCriteria(
-            $authenticatorSelectionArray['authenticatorAttachment'],
-            $authenticatorSelectionArray['userVerification'],
-            $authenticatorSelectionArray['residentKey'],
-            $authenticatorSelectionArray['requireResidentKey']
-        );
-
-
-        // Rufen Sie die Debugging-Methode auf
-        $this->debugPublicKeyCredentialCreationOptions(
-            $rpEntity,
-            $userEntity,
-            random_bytes(32),
-            [
-                [
-                    'type' => \Cose\Algorithms::COSE_ALGORITHM_ES256,
-                    'alg' => -7,
-                ],
-            ],
-            $authenticatorSelection,
+            null, // authenticatorAttachment (optional)
+            'preferred', // userVerification
             null,
-            ['direct'],
-            null,
-            null
+            false // requireResidentKey
         );
-
-
 
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
@@ -161,13 +116,15 @@ class AuthController extends Controller
             random_bytes(32),
             [
                 [
-                    'type' => \Cose\Algorithms::COSE_ALGORITHM_ES256,
+                    'type' => Algorithms::COSE_ALGORITHM_ES256,
                     'alg' => -7,
                 ],
             ],
-            60000,
-            $authenticatorSelection,
-            ['direct']
+            $authenticatorSelection, // AuthenticatorSelectionCriteria-Objekt
+            null, // Attestation
+            [], // ExcludeCredentials
+            60000, // Timeout
+            new AuthenticationExtensionsClientInputs() // Extensions
         );
 
         session(['webauthn.register' => serialize($options)]);
