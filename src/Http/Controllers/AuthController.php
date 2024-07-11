@@ -3,11 +3,13 @@
 namespace Hoang\PasskeyAuth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Cose\Algorithms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Webauthn\PublicKeyCredentialCreationOptions;
+use Webauthn\PublicKeyCredentialParameters;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialRpEntity;
@@ -106,16 +108,22 @@ class AuthController extends Controller
 
         $authenticatorSelection = new AuthenticatorSelectionCriteria();
 
+        $challenge = random_bytes(32);
+
+        $publicKeyCredentialParametersList = [
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256K), // More interesting algorithm
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256),  //      ||
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_RS256),  //      ||
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_PS256),  //      \/
+            PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ED256),  // Less interesting algorithm
+        ];
+
+
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
             $userEntity,
-            random_bytes(32),
-            [
-                [
-                    'type' => "public-key",
-                    'alg' => -7,
-                ],
-            ],
+            $challenge,
+            $publicKeyCredentialParametersList,
             $authenticatorSelection, // AuthenticatorSelectionCriteria-Objekt
             null, // Attestation
             [], // ExcludeCredentials
