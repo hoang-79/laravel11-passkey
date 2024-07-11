@@ -103,12 +103,7 @@ class AuthController extends Controller
             $user->name
         );
 
-        $authenticatorSelection = new AuthenticatorSelectionCriteria(
-            null, // authenticatorAttachment (optional)
-            'preferred', // userVerification
-            null,
-            false // requireResidentKey
-        );
+        $authenticatorSelection = new AuthenticatorSelectionCriteria();
 
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
@@ -116,7 +111,7 @@ class AuthController extends Controller
             random_bytes(32),
             [
                 [
-                    'type' => Algorithms::COSE_ALGORITHM_ES256,
+                    'type' => \Cose\Algorithms::COSE_ALGORITHM_ES256,
                     'alg' => -7,
                 ],
             ],
