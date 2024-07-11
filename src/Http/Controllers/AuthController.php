@@ -103,7 +103,11 @@ class AuthController extends Controller
             $user->name
         );
 
-        $authenticatorSelection = new AuthenticatorSelectionCriteria();
+        $authenticatorSelection = new AuthenticatorSelectionCriteria(
+            null, // authenticatorAttachment (optional)
+            'preferred', // userVerification
+            false // requireResidentKey
+        );
         dump($authenticatorSelection);
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
