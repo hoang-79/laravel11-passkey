@@ -139,7 +139,9 @@ class AuthController extends Controller
             ],
             $authenticatorSelection,
             null,
-            ['direct']
+            ['direct'],
+            null,
+            null
         );
 
 
