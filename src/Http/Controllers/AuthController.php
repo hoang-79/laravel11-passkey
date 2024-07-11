@@ -118,11 +118,20 @@ class AuthController extends Controller
             $user->name
         );
 
+        // AuthenticatorSelectionCriteria als Array definieren
+        $authenticatorSelectionArray = [
+            'authenticatorAttachment' => null,
+            'userVerification' => 'preferred',
+            'residentKey' => null,
+            'requireResidentKey' => false
+        ];
+
+        // AuthenticatorSelectionCriteria-Objekt erstellen
         $authenticatorSelection = new AuthenticatorSelectionCriteria(
-            null, // authenticatorAttachment (optional)
-            'preferred', // userVerification
-            null,
-            false // requireResidentKey
+            $authenticatorSelectionArray['authenticatorAttachment'],
+            $authenticatorSelectionArray['userVerification'],
+            $authenticatorSelectionArray['residentKey'],
+            $authenticatorSelectionArray['requireResidentKey']
         );
 
 
