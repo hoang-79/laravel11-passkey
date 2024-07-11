@@ -133,7 +133,7 @@ class AuthController extends Controller
             random_bytes(32),
             [
                 [
-                    'type' => Algorithms::COSE_ALGORITHM_ES256,
+                    'type' => \Cose\Algorithms::COSE_ALGORITHM_ES256,
                     'alg' => -7,
                 ],
             ],
