@@ -31,6 +31,21 @@ class AuthController extends Controller
         $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
     }
 
+    // Debugging-Methode
+    public function debugPublicKeyCredentialCreationOptions(
+        PublicKeyCredentialRpEntity $rp,
+        PublicKeyCredentialUserEntity $user,
+        string $challenge,
+        array $pubKeyCredParams,
+        ?AuthenticatorSelectionCriteria $authenticatorSelection,
+        ?string $attestation,
+        array $excludeCredentials,
+        ?int $timeout,
+        ?AuthenticationExtensions $extensions
+    ) {
+        dump($rp, $user, $challenge, $pubKeyCredParams, $authenticatorSelection, $attestation, $excludeCredentials, $timeout, $extensions);
+    }
+
     public function showLoginForm()
     {
         return view('passkeyauth::login');
@@ -109,7 +124,26 @@ class AuthController extends Controller
             null,
             false // requireResidentKey
         );
-        dump($authenticatorSelection);
+
+
+        // Rufen Sie die Debugging-Methode auf
+        $this->debugPublicKeyCredentialCreationOptions(
+            $rpEntity,
+            $userEntity,
+            random_bytes(32),
+            [
+                [
+                    'type' => Algorithms::COSE_ALGORITHM_ES256,
+                    'alg' => -7,
+                ],
+            ],
+            $authenticatorSelection,
+            null,
+            ['direct']
+        );
+
+
+
         $options = new PublicKeyCredentialCreationOptions(
             $rpEntity,
             $userEntity,
