@@ -18,6 +18,7 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Webauthn\AuthenticatorSelectionCriteria;
+use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
 use Hoang\PasskeyAuth\Models\TemporaryEmailOtp;
 use Hoang\PasskeyAuth\Mail\SendOtpMail;
 use App\Models\User;
@@ -119,7 +120,7 @@ class AuthController extends Controller
             null, // Attestation
             [], // ExcludeCredentials
             60000, // Timeout
-            new AuthenticationExtensionsClientInputs() // Extensions
+            new AuthenticationExtensions() // Extensions
         );
 
         session(['webauthn.register' => serialize($options)]);
