@@ -6,7 +6,7 @@ use Hoang\PasskeyAuth\Http\Controllers\AuthController;
 Route::middleware(['web'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/custom-register', [AuthController::class, 'register']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/webauthn-register', [AuthController::class, 'webauthnRegister']);
     Route::post('/webauthn-register-response', [AuthController::class, 'webauthnRegisterResponse']);
