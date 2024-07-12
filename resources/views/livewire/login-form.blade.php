@@ -1,5 +1,5 @@
 <div>
-        @if($stage == 'login')
+        @if($stage == 'passkey')
                 <input type="email" wire:model="email" placeholder="Email">
                 <button wire:click="submit">Login</button>
         @elseif($stage == 'otp')
@@ -28,7 +28,7 @@
                                         console.error('Error creating credential', error);
                                 });
                 </script>
-        @elseif($stage == 'register')
+        @elseif($stage == 'custom-register')
                 <p>Register your device</p>
         @endif
 </div>
