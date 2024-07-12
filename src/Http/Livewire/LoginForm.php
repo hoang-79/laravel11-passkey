@@ -16,7 +16,7 @@ class LoginForm extends Component
     {
         if ($this->stage == 'passkey') {
             $response = Http::post('/passkey', ['email' => $this->email]);
-
+            dump("Response: " . $response);
             if ($response->status() == 200) {
                 $this->webauthnOptions = $response->json();
                 $this->stage = 'webauthn';
