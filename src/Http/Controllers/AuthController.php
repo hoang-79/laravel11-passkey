@@ -3,6 +3,7 @@
 namespace Hoang\PasskeyAuth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Cose\Algorithms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
