@@ -53,7 +53,9 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
+        dump("Start Register");
         $request->validate(['email' => 'required|email']);
+        dump("Request");
 
         $otp = rand(100000, 999999);
         TemporaryEmailOtp::create([
@@ -61,10 +63,14 @@ class AuthController extends Controller
             'otp' => $otp,
         ]);
 
+        dump("OTP: " . $otp);
+
         try {
             Mail::to($request->email)->send(new SendOtpMail($otp));
+            dump("Mail");
         } catch (\Exception $e) {
             return response()->json(['message' => 'Failed to send OTP email. Please try again later.'], 500);
+            dump("Error Mail");
         }
 
         return response()->json(['message' => 'OTP sent to email']);
