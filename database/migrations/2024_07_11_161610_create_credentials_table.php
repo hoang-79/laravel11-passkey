@@ -13,7 +13,6 @@ return new class extends Migration {
         Schema::create('credentials', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('id');
             $table->string('type');
             $table->json('transports')->nullable();
             $table->string('attestation_type');

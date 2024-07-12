@@ -3,7 +3,6 @@
 namespace Hoang\PasskeyAuth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use Cose\Algorithms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -11,7 +10,6 @@ use Illuminate\Support\Facades\Hash;
 use Webauthn\PublicKeyCredentialCreationOptions;
 use Webauthn\PublicKeyCredentialParameters;
 use Webauthn\PublicKeyCredentialRequestOptions;
-use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialRpEntity;
 use Webauthn\PublicKeyCredentialUserEntity;
 use Webauthn\AuthenticatorAttestationResponse;
