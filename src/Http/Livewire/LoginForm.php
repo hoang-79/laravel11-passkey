@@ -15,7 +15,7 @@ class LoginForm extends Component
     public function submit()
     {
         if ($this->stage == 'passkey') {
-            $response = Http::post('/passkey', ['email' => $this->email]);
+            $response = Http::post(url('/passkey'), ['email' => $this->email]);
 
             if ($response->status() == 200) {
                 if ($response->json()['webauthn']) {
@@ -28,7 +28,7 @@ class LoginForm extends Component
                 $this->stage = 'register';
             }
         } elseif ($this->stage == 'otp') {
-            $response = Http::post('/verify-otp', [
+            $response = Http::post(url('/verify-otp'), [
                 'email' => $this->email,
                 'otp' => $this->otp,
             ]);
@@ -43,7 +43,7 @@ class LoginForm extends Component
 
     public function register()
     {
-        $response = Http::post('/custom-register', ['email' => $this->email]);
+        $response = Http::post(url('/custom-register'), ['email' => $this->email]);
 
         if ($response->status() == 200) {
             $this->stage = 'otp';
