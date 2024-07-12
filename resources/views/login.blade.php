@@ -6,7 +6,7 @@
 </head>
 <body>
 <div id="app">
-    <livewire:login-form />
+    <livewire:login-form1 />
 </div>
 
 @livewireScripts
