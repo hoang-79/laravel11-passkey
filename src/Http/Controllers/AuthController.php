@@ -83,6 +83,9 @@ class AuthController extends Controller
 
             Auth::login($user);
 
+            // OTP nach erfolgreicher Verifizierung löschen
+            $temporaryOtp->delete();
+
             return response()->json(['message' => 'Account created successfully']);
         }
 
