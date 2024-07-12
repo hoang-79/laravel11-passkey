@@ -61,10 +61,15 @@ class AuthController extends Controller
             'otp' => $otp,
         ]);
 
-        Mail::to($request->email)->send(new SendOtpMail($otp));
+        try {
+            Mail::to($request->email)->send(new SendOtpMail($otp));
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to send OTP email. Please try again later.'], 500);
+        }
 
         return response()->json(['message' => 'OTP sent to email']);
     }
+
 
     public function verifyOtp(Request $request)
     {
