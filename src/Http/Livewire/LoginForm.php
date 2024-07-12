@@ -43,7 +43,9 @@ class LoginForm extends Component
 
     public function register()
     {
+        dump("LoginForm::Register");
         $response = Http::post(url('/custom-register'), ['email' => $this->email]);
+        dump("LoginForm::Response: " . $response);
 
         if ($response->status() == 200) {
             $this->stage = 'otp';
