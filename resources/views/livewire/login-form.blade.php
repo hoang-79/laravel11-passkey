@@ -11,6 +11,16 @@
                 </x-button>
             </div>
         </form>
+    @elseif ($stage == 'register')
+        <p>{{ __('Email does not exist. Do you want to create an account?') }}</p>
+        <div class="flex items-center justify-end mt-4">
+            <x-button class="ms-4" wire:click="register">
+                {{ __('Yes') }}
+            </x-button>
+            <x-button class="ms-4" wire:click="$set('stage', 'passkey')">
+                {{ __('No') }}
+            </x-button>
+        </div>
     @elseif ($stage == 'otp')
         <form wire:submit.prevent="submit">
             <div>

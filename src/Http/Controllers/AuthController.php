@@ -40,16 +40,15 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        dump("startLogin");
         $request->validate(['email' => 'required|email']);
 
         $user = User::where('email', $request->email)->first();
 
         if ($user) {
-            return response()->json(['message' => 'WebAuthn authentication not implemented yet']);
+            return response()->json(['webauthn' => true, 'message' => 'WebAuthn authentication required']);
         }
-        dump("EndLogin");
-        return response()->json(['message' => 'Email does not exist'], 404);
+
+        return response()->json(['webauthn' => false, 'message' => 'Email does not exist']);
     }
 
     public function register(Request $request)

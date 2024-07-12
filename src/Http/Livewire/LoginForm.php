@@ -16,12 +16,16 @@ class LoginForm extends Component
     {
         if ($this->stage == 'passkey') {
             $response = Http::post('/passkey', ['email' => $this->email]);
-            dump("Response: " . $response);
+
             if ($response->status() == 200) {
-                $this->webauthnOptions = $response->json();
-                $this->stage = 'webauthn';
+                if ($response->json()['webauthn']) {
+                    $this->webauthnOptions = $response->json();
+                    $this->stage = 'webauthn';
+                } else {
+                    $this->stage = 'otp';
+                }
             } else {
-                session()->flash('error', $response->json()['message']);
+                $this->stage = 'register';
             }
         } elseif ($this->stage == 'otp') {
             $response = Http::post('/verify-otp', [
@@ -34,6 +38,17 @@ class LoginForm extends Component
             } else {
                 session()->flash('error', $response->json()['message']);
             }
+        }
+    }
+
+    public function register()
+    {
+        $response = Http::post('/custom-register', ['email' => $this->email]);
+
+        if ($response->status() == 200) {
+            $this->stage = 'otp';
+        } else {
+            session()->flash('error', $response->json()['message']);
         }
     }
 
