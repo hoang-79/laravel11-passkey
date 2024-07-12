@@ -9,13 +9,13 @@ class LoginForm extends Component
 {
     public $email = '';
     public $otp = '';
-    public $stage = 'login';
+    public $stage = 'passkey';
     public $webauthnOptions;
 
     public function submit()
     {
-        if ($this->stage == 'login') {
-            $response = Http::post('/login', ['email' => $this->email]);
+        if ($this->stage == 'passkey') {
+            $response = Http::post('/passkey', ['email' => $this->email]);
 
             if ($response->status() == 200) {
                 $this->webauthnOptions = $response->json();
@@ -30,7 +30,7 @@ class LoginForm extends Component
             ]);
 
             if ($response->status() == 200) {
-                $this->stage = 'register';
+                $this->stage = 'custom-register';
             } else {
                 session()->flash('error', $response->json()['message']);
             }
