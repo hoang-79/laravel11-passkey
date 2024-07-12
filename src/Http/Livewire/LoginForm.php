@@ -48,7 +48,7 @@ class LoginForm extends Component
         if ($response->status() == 200) {
             $this->stage = 'otp';
         } else {
-            session()->flash('error', $response->json()['message']);
+            session()->flash('error', $response->json()['message'] ?? 'Unknown error');
         }
     }
 
