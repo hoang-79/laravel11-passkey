@@ -1,5 +1,5 @@
 {
-    "name": "hoang/passkeyauth",
+    "name": "hoang79/passkeyauth",
     "description": "Passkey for Laravel 11",
     "type": "library",
     "require": {
@@ -23,7 +23,7 @@
     },
     "authors": [
         {
-            "name": "hoang-79",
+            "name": "hoang79",
             "email": "hoang.nguyen@hotmail.ch"
         }
     ],
