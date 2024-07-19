@@ -27,7 +27,7 @@
             "email": "hoang.nguyen@hotmail.ch"
         }
     ],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "extra": {
         "laravel": {
             "providers": [
