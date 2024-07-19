@@ -233,5 +233,6 @@ class InstallPasskeyAuth extends Command
         foreach ($files as $file) {
             $filesystem->copy($sourcePath . $file, $destinationPath . $file);
         }
+
     }
 }
