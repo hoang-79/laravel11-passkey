@@ -18,7 +18,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Hoang\\PasskeyAuth\\": "src/"
+            "Hoang79\\PasskeyAuth\\": "src/"
         }
     },
     "authors": [
@@ -31,7 +31,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Hoang\\PasskeyAuth\\PasskeyAuthServiceProvider"
+                "Hoang79\\PasskeyAuth\\PasskeyAuthServiceProvider"
             ]
         }
     }

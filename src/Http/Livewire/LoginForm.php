@@ -1,5 +1,5 @@
 <?php
-namespace Hoang\PasskeyAuth\Http\Livewire;
+namespace Hoang79\PasskeyAuth\Http\Livewire;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Http;

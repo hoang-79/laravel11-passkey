@@ -30,7 +30,7 @@ return array(
     'Lcobucci\\Clock\\' => array($vendorDir . '/lcobucci/clock/src'),
     'Illuminate\\Support\\' => array($vendorDir . '/illuminate/collections', $vendorDir . '/illuminate/conditionable', $vendorDir . '/illuminate/macroable', $vendorDir . '/illuminate/support'),
     'Illuminate\\Contracts\\' => array($vendorDir . '/illuminate/contracts'),
-    'Hoang\\PasskeyAuth\\' => array($baseDir . '/src'),
+    'Hoang79\\PasskeyAuth\\' => array($baseDir . '/src'),
     'Doctrine\\Inflector\\' => array($vendorDir . '/doctrine/inflector/lib/Doctrine/Inflector'),
     'Cose\\' => array($vendorDir . '/web-auth/cose-lib/src'),
     'Carbon\\Doctrine\\' => array($vendorDir . '/carbonphp/carbon-doctrine-types/src/Carbon/Doctrine'),

@@ -1,6 +1,6 @@
 <?php
 
-namespace Hoang\PasskeyAuth\Http\Controllers;
+namespace Hoang79\PasskeyAuth\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Cose\Algorithms;
@@ -21,14 +21,14 @@ use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Webauthn\AuthenticatorSelectionCriteria;
 use Webauthn\AuthenticatorAttestationResponseValidator;
 use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
-use Hoang\PasskeyAuth\Models\TemporaryEmailOtp;
-use Hoang\PasskeyAuth\Mail\SendOtpMail;
-use Hoang\PasskeyAuth\Models\User;
+use Hoang79\PasskeyAuth\Models\TemporaryEmailOtp;
+use Hoang79\PasskeyAuth\Mail\SendOtpMail;
+use Hoang79\PasskeyAuth\Models\User;
 use CBOR\Decoder;
 use CBOR\StringStream;
 use Webauthn\CollectedClientData;
 use Webauthn\AttestationObject;
-use Hoang\PasskeyAuth\Auth\CredentialSourceRepository;
+use Hoang79\PasskeyAuth\Auth\CredentialSourceRepository;
 use Psr\Http\Message\ServerRequestInterface;
 use Webauthn\AttestationStatement\AttestationStatementSupportManager;
 use Webauthn\AttestationStatement\NoneAttestationStatementSupport;

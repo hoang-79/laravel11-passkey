@@ -63,7 +63,7 @@ class ComposerStaticInit42267d5f98c5607eea1c42f03b818453
         ),
         'H' => 
         array (
-            'Hoang\\PasskeyAuth\\' => 18,
+            'Hoang79\\PasskeyAuth\\' => 18,
         ),
         'D' => 
         array (
@@ -183,7 +183,7 @@ class ComposerStaticInit42267d5f98c5607eea1c42f03b818453
         array (
             0 => __DIR__ . '/..' . '/illuminate/contracts',
         ),
-        'Hoang\\PasskeyAuth\\' => 
+        'Hoang79\\PasskeyAuth\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),

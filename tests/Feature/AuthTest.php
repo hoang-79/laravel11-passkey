@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use Hoang\PasskeyAuth\Models\TemporaryEmailOtp;
+use Hoang79\PasskeyAuth\Models\TemporaryEmailOtp;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;

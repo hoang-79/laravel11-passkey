@@ -1,11 +1,11 @@
 <?php
 
-namespace Hoang\PasskeyAuth;
+namespace Hoang79\PasskeyAuth;
 
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
-use Hoang\PasskeyAuth\Http\Livewire\LoginForm;
-use Hoang\PasskeyAuth\Console\Commands\InstallPasskeyAuth;
+use Hoang79\PasskeyAuth\Http\Livewire\LoginForm;
+use Hoang79\PasskeyAuth\Console\Commands\InstallPasskeyAuth;
 
 
 class PasskeyAuthServiceProvider extends ServiceProvider

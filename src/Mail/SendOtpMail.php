@@ -1,6 +1,6 @@
 <?php
 
-namespace Hoang\PasskeyAuth\Mail;
+namespace Hoang79\PasskeyAuth\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;

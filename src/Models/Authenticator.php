@@ -1,6 +1,6 @@
 <?php
 
-namespace Hoang\PasskeyAuth\Models;
+namespace Hoang79\PasskeyAuth\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

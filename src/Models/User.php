@@ -1,6 +1,6 @@
 <?php
 
-namespace Hoang\PasskeyAuth\Models;
+namespace Hoang79\PasskeyAuth\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,9 +10,9 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
-use Hoang\PasskeyAuth\Models\Credential;
+use Hoang79\PasskeyAuth\Models\Credential;
 use Webauthn\PublicKeyCredentialSource;
-use Hoang\PasskeyAuth\Models\Authenticator;
+use Hoang79\PasskeyAuth\Models\Authenticator;
 
 class User extends Authenticatable
 {

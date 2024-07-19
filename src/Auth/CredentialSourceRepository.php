@@ -1,9 +1,9 @@
 <?php
 
-namespace Hoang\PasskeyAuth\Auth;
+namespace Hoang79\PasskeyAuth\Auth;
 
-use Hoang\PasskeyAuth\Models\Authenticator;
-use Hoang\PasskeyAuth\Models\User;
+use Hoang79\PasskeyAuth\Models\Authenticator;
+use Hoang79\PasskeyAuth\Models\User;
 use Webauthn\PublicKeyCredentialSource;
 use Webauthn\PublicKeyCredentialSourceRepository;
 use Webauthn\PublicKeyCredentialUserEntity;

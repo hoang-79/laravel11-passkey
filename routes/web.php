@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Hoang\PasskeyAuth\Http\Controllers\AuthController;
+use Hoang79\PasskeyAuth\Http\Controllers\AuthController;
 
 Route::middleware(['web'])->group(function () {
     Route::get('/passkey', [AuthController::class, 'showLoginForm'])->name('passkey');
