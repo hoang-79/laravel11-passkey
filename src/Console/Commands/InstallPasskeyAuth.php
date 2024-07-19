@@ -42,11 +42,15 @@ class InstallPasskeyAuth extends Command
             'Features::emailVerification(),' => '//Features::emailVerification(),',
             'Features::updateProfileInformation(),' => 'Features::updateProfileInformation(),',
             'Features::updatePasswords(),' => '//Features::updatePasswords(),',
-            'Features::twoFactorAuthentication([' => '/*Features::twoFactorAuthentication([',
-            'confirm' => true,' => "'confirm' => true,",
-            'confirmPassword' => true,' => "'confirmPassword' => true,",
-            "'window' => 0," => "// 'window' => 0,",
-            ']),' => ']),*/'
+            'Features::twoFactorAuthentication([' . PHP_EOL .
+            "            'confirm' => true," . PHP_EOL .
+            "            'confirmPassword' => true," . PHP_EOL .
+            "            // 'window' => 0," . PHP_EOL .
+            '        ]),' => '/*Features::twoFactorAuthentication([' . PHP_EOL .
+                "            'confirm' => true," . PHP_EOL .
+                "            'confirmPassword' => true," . PHP_EOL .
+                "            // 'window' => 0," . PHP_EOL .
+                '        ]),*/'
         ];
 
         foreach ($changes as $search => $replace) {
@@ -229,5 +233,6 @@ class InstallPasskeyAuth extends Command
         foreach ($files as $file) {
             $filesystem->copy($sourcePath . $file, $destinationPath . $file);
         }
+
     }
 }
