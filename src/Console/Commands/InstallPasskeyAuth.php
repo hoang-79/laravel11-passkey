@@ -24,6 +24,7 @@ class InstallPasskeyAuth extends Command
         $this->updateAuthConfig();
         $this->updateAppConfig();
         $this->updateWelcomeView();
+        $this->updateProvidersConfig();
         $this->copyMigrations();
 
         $this->info('PasskeyAuth package installed successfully.');
@@ -223,6 +224,32 @@ class InstallPasskeyAuth extends Command
         // Save the backup and the new configuration
         file_put_contents($path, $backup . $contents);
     }
+
+
+    protected function updateProvidersConfig()
+    {
+        $this->info('Updating providers.php config...');
+
+        $path = base_path('bootstrap/providers.php');
+        $contents = file_get_contents($path);
+
+        // Backup the original configuration
+        $backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
+
+        $search = 'return [';
+        $replace = 'return [
+    Hoang79\PasskeyAuth\PasskeyAuthServiceProvider::class,';
+
+        $contents = str_replace($search, $replace, $contents);
+
+        // Add Passkey list comment
+        $passkeyComment = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $contents;
+        $contents = $passkeyComment . $contents;
+
+        // Save the backup and the new configuration
+        file_put_contents($path, $backup . $contents);
+    }
+
 
 
     protected function copyMigrations()
