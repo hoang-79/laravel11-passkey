@@ -1,6 +1,6 @@
 <?php
 
-namespace Hoang79\PasskeyAuth\Console;
+namespace Hoang79\PasskeyAuth\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
