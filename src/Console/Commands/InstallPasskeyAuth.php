@@ -188,34 +188,42 @@ class InstallPasskeyAuth extends Command
         $path = resource_path('views/welcome.blade.php');
         $contents = file_get_contents($path);
 
+        // Create a backup of the original configuration
+        $backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
+
         $search = '<a
-                                        href="{{ route(\'login\') }}"
+                                    href="{{ route(\'login\') }}"
+                                    class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                >
+                                    Log in
+                                </a>
+
+                                @if (Route::has(\'register\'))
+                                    <a
+                                        href="{{ route(\'register\') }}"
                                         class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
                                     >
-                                        Log in
+                                        Register
                                     </a>
-
-                                    @if (Route::has(\'register\'))
-                                        <a
-                                            href="{{ route(\'register\') }}"
-                                            class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
-                                        >
-                                            Register
-                                        </a>
-                                    @endif';
+                                @endif';
 
         $replace = '<a
-                                        href="{{ route(\'passkey\') }}"
-                                        class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
-                                    >
-                                        Log in
-                                    </a>';
+                                    href="{{ route(\'passkey\') }}"
+                                    class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                >
+                                    Log in
+                                </a>';
 
-        $backup = "/**\n* Geändert von Passkey\n*/\n" . $replace . "\n/**\n* Backup: Originale auskommentiert\n*/\n" . $search
         $contents = str_replace($search, $replace, $contents);
 
+        // Add Passkey list comment
+        $passkeyComment = "/**\n* Geändert von Passkey\n*/\n" . $contents;
+        $contents = $passkeyComment . $contents;
+
+        // Save the backup and the new configuration
         file_put_contents($path, $backup . $contents);
     }
+
 
     protected function copyMigrations()
     {
