@@ -102,7 +102,8 @@ class InstallPasskeyAuth extends Command
     {
         $this->info('Updating app.php config...');
 
-        $path = bootstrap_path('app.php');
+        $path = base_path('bootstrap/app.php');
+
         $contents = file_get_contents($path);
 
         if (strpos($contents, 'validateCsrfTokens') === false) {
