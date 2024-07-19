@@ -36,22 +36,34 @@ class InstallPasskeyAuth extends Command
         $path = config_path('fortify.php');
         $contents = file_get_contents($path);
 
-        $search = "'features' => [";
-        $replace = "'features' => [
-        //Features::registration(),
-        //Features::resetPasswords(),
-        //Features::emailVerification(),
-        Features::updateProfileInformation(),
-        //Features::updatePasswords(),
-        /*Features::twoFactorAuthentication([
-            'confirm' => true,
-            'confirmPassword' => true,
-            // 'window' => 0,
-        ]),*/";
+        $changes = [
+            'Features::registration(),' => '//Features::registration(),',
+            'Features::resetPasswords(),' => '//Features::resetPasswords(),',
+            'Features::emailVerification(),' => '//Features::emailVerification(),',
+            'Features::updateProfileInformation(),' => 'Features::updateProfileInformation(),',
+            'Features::updatePasswords(),' => '//Features::updatePasswords(),',
+            'Features::twoFactorAuthentication([' => '/*Features::twoFactorAuthentication([',
+            'confirm' => true,' => "'confirm' => true,",
+            'confirmPassword' => true,' => "'confirmPassword' => true,",
+            "'window' => 0," => "// 'window' => 0,",
+            ']),' => ']),*/'
+        ];
 
-        $contents = str_replace($search, $replace, $contents);
+        foreach ($changes as $search => $replace) {
+            $contents = str_replace($search, $replace, $contents);
+        }
 
-        file_put_contents($path, $contents);
+        $backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
+        foreach ($changes as $search => $replace) {
+            $backup .= str_replace("//", "", $replace) . "\n";
+        }
+
+        $backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
+        foreach ($changes as $search => $replace) {
+            $backup .= "// " . $search . "\n";
+        }
+
+        file_put_contents($path, $backup . $contents);
     }
 
     protected function updateJetstreamConfig()
@@ -61,17 +73,29 @@ class InstallPasskeyAuth extends Command
         $path = config_path('jetstream.php');
         $contents = file_get_contents($path);
 
-        $search = "'features' => [";
-        $replace = "'features' => [
-        // Features::termsAndPrivacyPolicy(),
-        Features::profilePhotos(),
-        //Features::api(),
-        Features::teams(['invitations' => true]),
-        Features::accountDeletion(),";
+        $changes = [
+            'Features::termsAndPrivacyPolicy(),' => '// Features::termsAndPrivacyPolicy(),',
+            'Features::profilePhotos(),' => 'Features::profilePhotos(),',
+            'Features::api(),' => '//Features::api(),',
+            "Features::teams(['invitations' => true'])" => "Features::teams(['invitations']) => true",
+            'Features::accountDeletion(),' => 'Features::accountDeletion(),'
+        ];
 
-        $contents = str_replace($search, $replace, $contents);
+        foreach ($changes as $search => $replace) {
+            $contents = str_replace($search, $replace, $contents);
+        }
 
-        file_put_contents($path, $contents);
+        $backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
+        foreach ($changes as $search => $replace) {
+            $backup .= str_replace("//", "", $replace) . "\n";
+        }
+
+        $backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
+        foreach ($changes as $search => $replace) {
+            $backup .= "// " . $search . "\n";
+        }
+
+        file_put_contents($path, $backup . $contents);
     }
 
     protected function updateAuthConfig()
@@ -81,21 +105,21 @@ class InstallPasskeyAuth extends Command
         $path = config_path('auth.php');
         $contents = file_get_contents($path);
 
-        $search = "'providers' => [";
-        $replace = "'providers' => [
-        'users' => [
-            'driver' => 'eloquent-webauthn',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
-            'password_fallback' => true,
-        ],
-        /*'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
-        ],*/";
+        // Backup the original 'users' provider
+        $contents = str_replace(
+            "'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],",
+            "/*\n'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],\n*/",
+            $contents
+        );
 
-        $contents = str_replace($search, $replace, $contents);
+        // Add the new 'users' provider for PasskeyAuth
+        $newProvider = "'users' => [\n            'driver' => 'eloquent-webauthn',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n            'password_fallback' => true,\n        ],\n";
 
-        file_put_contents($path, $contents);
+        $backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $newProvider . "\n/**\n* Backup: Originale auskommentiert\n*/\n" . "/*\n'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],\n*/";
+
+        $contents = str_replace("'providers' => [", "'providers' => [\n" . $newProvider, $contents);
+
+        file_put_contents($path, $backup . $contents);
     }
 
     protected function updateAppConfig()
@@ -103,7 +127,6 @@ class InstallPasskeyAuth extends Command
         $this->info('Updating app.php config...');
 
         $path = base_path('bootstrap/app.php');
-
         $contents = file_get_contents($path);
 
         if (strpos($contents, 'validateCsrfTokens') === false) {
@@ -120,8 +143,8 @@ class InstallPasskeyAuth extends Command
         ]);';
             $contents = str_replace($search, $replace, $contents);
         } else {
-            $search = '$middleware->validateCsrfTokens(except: [';
-            $replace = '$middleware->validateCsrfTokens(except: [
+        $search = '$middleware->validateCsrfTokens(except: [';
+        $replace = '$middleware->validateCsrfTokens(except: [
             \'passkey\',
             \'custom-register\',
             \'verify-otp\',
@@ -130,8 +153,8 @@ class InstallPasskeyAuth extends Command
             \'webauthn-authenticate\',
             \'webauthn-authenticate-response\',';
 
-            $contents = str_replace($search, $replace, $contents);
-        }
+        $contents = str_replace($search, $replace, $contents);
+    }
 
         if (strpos($contents, 'redirectGuestsTo') === false) {
             $search = '->withMiddleware(function (Middleware $middleware) {';
@@ -141,6 +164,13 @@ class InstallPasskeyAuth extends Command
         } else {
             $search = '$middleware->redirectGuestsTo(\'/';
             $replace = '$middleware->redirectGuestsTo(\'/passkey\');';
+            $contents = str_replace($search, $replace, $contents);
+        }
+
+        // Add service provider
+        if (strpos($contents, "Hoang\PasskeyAuth\PasskeyAuthServiceProvider::class") === false) {
+            $search = "return [";
+            $replace = "return [\n    Hoang\PasskeyAuth\PasskeyAuthServiceProvider::class,";
             $contents = str_replace($search, $replace, $contents);
         }
 
@@ -177,9 +207,10 @@ class InstallPasskeyAuth extends Command
                                         Log in
                                     </a>';
 
+        $backup = "/**\n* Geändert von Passkey\n*/\n" . $replace . "\n/**\n* Backup: Originale auskommentiert\n*/\n" . $search
         $contents = str_replace($search, $replace, $contents);
 
-        file_put_contents($path, $contents);
+        file_put_contents($path, $backup . $contents);
     }
 
     protected function copyMigrations()
@@ -187,7 +218,7 @@ class InstallPasskeyAuth extends Command
         $this->info('Copying migration files...');
 
         $filesystem = new Filesystem;
-        $sourcePath = __DIR__ . '/../../database/migrations/';
+        $sourcePath = __DIR__ . '/../../../database/migrations/';
         $destinationPath = database_path('migrations/');
 
         $files = [
