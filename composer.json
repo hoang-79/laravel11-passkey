@@ -7,7 +7,13 @@
         "illuminate/support": "^8.0|^9.0|^10.0|^11.0",
         "symfony/serializer": "^7.1",
         "symfony/property-access": "^7.1",
-        "web-auth/webauthn-lib": "^4.8"
+        "web-auth/webauthn-lib": "^4.8",
+        "symfony/psr-http-message-bridge": "^7.1",
+        "nyholm/psr7": "^1.8",
+        "phpdocumentor/reflection-docblock": "^5.4",
+        "web-auth/webauthn-lib": "^4.8",
+        "laragear/webauthn": "^2.0",
+        "spomky-labs/cbor-php": "^3.0"
     },
     "license": "MIT",
     "autoload": {

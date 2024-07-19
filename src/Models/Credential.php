@@ -9,25 +9,18 @@ class Credential extends Model
 {
     use HasFactory;
 
+    protected $table = 'credentials';
+
     protected $fillable = [
         'user_id',
-        'id',
-        'type',
-        'transports',
-        'attestation_type',
-        'trust_path',
-        'aaguid',
-        'credential_public_key',
-        'user_handle',
-        'counter'
+        'credential_id',
+        'public_key'
     ];
 
-    protected $casts = [
-        'transports' => 'array',
-        'trust_path' => 'array',
-        'aaguid' => 'string',
-        'credential_public_key' => 'string',
-        'user_handle' => 'string',
-        'counter' => 'integer',
-    ];
+    protected $casts = [];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

@@ -19,64 +19,299 @@ use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
 use Symfony\Component\Serializer\Normalizer\ObjectNormalizer;
 use Webauthn\AuthenticatorSelectionCriteria;
+use Webauthn\AuthenticatorAttestationResponseValidator;
 use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
 use Hoang\PasskeyAuth\Models\TemporaryEmailOtp;
 use Hoang\PasskeyAuth\Mail\SendOtpMail;
-use App\Models\User;
+use Hoang\PasskeyAuth\Models\User;
+use CBOR\Decoder;
+use CBOR\StringStream;
+use Webauthn\CollectedClientData;
+use Webauthn\AttestationObject;
+use Hoang\PasskeyAuth\Auth\CredentialSourceRepository;
+use Psr\Http\Message\ServerRequestInterface;
+use Webauthn\AttestationStatement\AttestationStatementSupportManager;
+use Webauthn\AttestationStatement\NoneAttestationStatementSupport;
+use Webauthn\AuthenticationExtensions\AuthenticationExtensionsClientInputs;
+use Webauthn\AuthenticationExtensions\ExtensionOutputCheckerHandler;
+use Webauthn\TokenBinding\IgnoreTokenBindingHandler;
+use Webauthn\PublicKeyCredentialLoader;
+use Webauthn\AttestationStatement\AttestationObjectLoader;
+use App\Models\Team;
+use Webauthn\PublicKeyCredentialSource;
+use Cose\Algorithm\Manager;
+use Cose\Algorithm\Signature\ECDSA\ES256;
+use Cose\Algorithm\Signature\ECDSA\ES256K;
+use Cose\Algorithm\Signature\ECDSA\ES384;
+use Cose\Algorithm\Signature\ECDSA\ES512;
+use Cose\Algorithm\Signature\RSA\RS256;
+use Cose\Algorithm\Signature\RSA\RS384;
+use Cose\Algorithm\Signature\RSA\RS512;
+use Cose\Algorithm\Signature\RSA\PS256;
+use Cose\Algorithm\Signature\RSA\PS384;
+use Cose\Algorithm\Signature\RSA\PS512;
+use Cose\Algorithm\Signature\EdDSA\Ed256;
+use Cose\Algorithm\Signature\EdDSA\Ed512;
+use Webauthn\AuthenticatorAssertionResponseValidator;
+use Webauthn\Denormalizer\WebauthnSerializerFactory;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
+use Webauthn\PublicKeyCredential;
+
 
 class AuthController extends Controller
 {
+    const CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY = 'publicKeyCredentialRequestOptions'; // Add this line
+
     protected $serializer;
+
+    public $errorMessage = '';
 
     public function __construct()
     {
         $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
     }
 
+    /**
+     * Zeigt das Login-Formular an.
+     *
+     * @return \Illuminate\View\View
+     */
     public function showLoginForm()
     {
         return view('passkeyauth::login');
     }
 
+    /**
+     * Handhabt den Login-Prozess.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function login(Request $request)
     {
-        $request->validate(['email' => 'required|email']);
+        try {
+            // Validierung der Anfrage
+            $request->validate(['email' => 'required|email']);
 
-        $user = User::where('email', $request->email)->first();
+            // Benutzer suchen
+            $user = User::where('email', $request->email)->first();
 
-        if ($user) {
-            return response()->json(['webauthn' => true, 'message' => 'WebAuthn authentication required']);
+            if ($user) {
+                $options = $this->generateWebAuthnAuthenticateOptions($user);
+                // Session-ID an den Client senden
+                $sessionId = session()->getId();
+                return response()->json([
+                    'webauthnLogin' => true,
+                    'message' => 'WebAuthn authentication required',
+                    'options' => $options,
+                    'sessionId' => $sessionId
+                ]);
+            }
+
+            return response()->json(['webauthn' => false, 'message' => 'Email does not exist'], 404);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred during login'], 500);
         }
-
-        return response()->json(['webauthn' => false, 'message' => 'Email does not exist']);
     }
 
+    protected function generateWebAuthnAuthenticateOptions($user)
+    {
+        // Ensure the user ID is correctly encoded
+        $userId = base64_encode((string) $user->id);
+
+        // Create the User Entity
+        $userEntity = new PublicKeyCredentialUserEntity($user->email, $userId, $user->email, null);
+
+        $pkSourceRepo = new CredentialSourceRepository();
+
+        // Retrieve all registered authenticators for the user
+        $registeredAuthenticators = $pkSourceRepo->findAllForUserEntity($userEntity);
+
+        $allowedCredentials = collect($registeredAuthenticators)
+            ->map(function ($authenticator) {
+                try {
+                    $credentialSource = PublicKeyCredentialSource::createFromArray($authenticator['public_key']);
+                    return $credentialSource;
+                } catch (\Exception $e) {
+                    return null;
+                }
+            })
+            ->filter()
+            ->map(function (PublicKeyCredentialSource $credential) {
+                return $credential->getPublicKeyCredentialDescriptor();
+            })
+            ->toArray();
+
+        $pkRequestOptions = PublicKeyCredentialRequestOptions::create(
+            random_bytes(32)
+        )->allowCredentials(...$allowedCredentials);
+
+        $serializedOptions = $pkRequestOptions->jsonSerialize();
+        $serializedOptions['user']['id'] = $userId; // Add user ID here
+        session()->put(self::CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY, $serializedOptions);
+
+        return $serializedOptions;
+    }
+
+    /**
+     * Bereitet die WebAuthn-Authentifizierung vor.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Webauthn\PublicKeyCredentialRequestOptions
+     */
+    public function webauthnAuthenticateResponse(Request $request, ServerRequestInterface $serverRequest)
+    {
+        try {
+            // Retrieve session ID
+            $sessionId = $request->input('sessionId');
+            session()->setId($sessionId);
+            session()->start();
+
+            // Create CredentialSourceRepository
+            $pkSourceRepo = new CredentialSourceRepository();
+
+            // Create AttestationStatementSupportManager
+            $attestationManager = AttestationStatementSupportManager::create();
+            $attestationManager->add(NoneAttestationStatementSupport::create());
+
+            // Create AlgorithmManager
+            $algorithmManager = Manager::create()->add(
+                ES256::create(),
+                ES256K::create(),
+                ES384::create(),
+                ES512::create(),
+                RS256::create(),
+                RS384::create(),
+                RS512::create(),
+                PS256::create(),
+                PS384::create(),
+                PS512::create(),
+                Ed256::create(),
+                Ed512::create(),
+            );
+
+            // Create AuthenticatorAssertionResponseValidator
+            $responseValidator = AuthenticatorAssertionResponseValidator::create(
+                $pkSourceRepo,
+                IgnoreTokenBindingHandler::create(),
+                ExtensionOutputCheckerHandler::create(),
+                $algorithmManager,
+            );
+
+            // Create WebauthnSerializerFactory with AttestationStatementSupportManager
+            $serializerFactory = new WebauthnSerializerFactory($attestationManager);
+            $serializer = $serializerFactory->create();
+
+            $assertionData = $request->input('assertionData');
+
+            // Adjust the data to remove padding and replace URL-safe Base64 characters
+            $this->processBase64Encoding($assertionData);
+
+            // Load assertion data
+            $jsonAssertionData = json_encode($assertionData);
+            dump("JSON Encoded Assertion Data: ", $jsonAssertionData);
+
+
+            // Deserialize assertion data
+            $publicKeyCredential = $serializer->deserialize($jsonAssertionData, PublicKeyCredential::class, 'json');
+            dump("Public Key Credential loaded: ", $publicKeyCredential);
+
+            $authenticatorAssertionResponse = $publicKeyCredential->getResponse();
+            dump("Authenticator Assertion Response: ", $authenticatorAssertionResponse);
+
+            if (!$authenticatorAssertionResponse instanceof AuthenticatorAssertionResponse) {
+                throw ValidationException::withMessages([
+                    'username' => 'Invalid response type',
+                ]);
+            }
+
+            // Retrieve stored options
+            $optionsSerialized = session(self::CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY);
+            dump("Options Serialized from Session: ", $optionsSerialized);
+
+            $options = $optionsSerialized; // Use the array directly
+            dump("Options Unserialized: ", $options);
+
+            // Ensure allowCredentials is an array of arrays
+            $options['allowCredentials'] = array_map(function ($credential) {
+                return $credential->jsonSerialize();
+            }, $options['allowCredentials']);
+            dump("Processed allowCredentials: ", $options['allowCredentials']);
+
+            // Validate the response
+            $publicKeyCredentialSource = $responseValidator->check(
+                $publicKeyCredential->getRawId(),
+                $authenticatorAssertionResponse,
+                PublicKeyCredentialRequestOptions::createFromArray($options),
+                $serverRequest,
+                $authenticatorAssertionResponse->getUserHandle(),
+            );
+            dump("Public Key Credential Source: ", $publicKeyCredentialSource);
+
+            // Remove stored options
+            $request->session()->forget(self::CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY);
+
+            $getUserHandle = base64_decode($publicKeyCredentialSource->getUserHandle());
+
+            dump("getUserHandle: " . $getUserHandle);
+            // Authenticate the user
+            $user = User::findOrFail($getUserHandle);
+            dump("User found: ", $user);
+
+            Auth::login($user);
+
+            return response()->json(['message' => 'Authentication successful']);
+        } catch (\Exception $e) {
+            dump("Fehler bei der Verarbeitung der WebAuthn-Authentifizierungsantwort: " . $e->getMessage());
+            return response()->json(['message' => 'An error occurred during authentication', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Handhabt die Registrierung eines neuen Benutzers.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function register(Request $request)
     {
-        dump("Start Register");
         $request->validate(['email' => 'required|email']);
-        dump("Request");
 
         $otp = rand(100000, 999999);
-        TemporaryEmailOtp::create([
-            'email' => $request->email,
-            'otp' => $otp,
-        ]);
+        TemporaryEmailOtp::updateOrCreate(
+            ['email' => $request->email], // Condition to find the existing entry
+            ['otp' => $otp] // Data to update or create
+        );
 
-        dump("OTP: " . $otp);
+        dump("OTP erstellt: " . $otp);
 
         try {
             Mail::to($request->email)->send(new SendOtpMail($otp));
-            dump("Mail");
+            $this->setError("OTP-E-Mail gesendet");
         } catch (\Exception $e) {
+            $this->setError("Failed to send OTP email. Please try again later.");
             return response()->json(['message' => 'Failed to send OTP email. Please try again later.'], 500);
-            dump("Error Mail");
         }
 
         return response()->json(['message' => 'OTP sent to email']);
     }
 
-
+    /**
+     * Verifiziert das eingegebene OTP.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function verifyOtp(Request $request)
     {
         $request->validate([
@@ -90,38 +325,56 @@ class AuthController extends Controller
             $user = User::create([
                 'name' => $request->email,
                 'email' => $request->email,
-                'password' => Hash::make('password'), // Default password
+                'password' => Hash::make('password') // Default password
             ]);
 
+
             Auth::login($user);
+
+            $this->createTeam($user);
 
             // OTP nach erfolgreicher Verifizierung löschen
             $temporaryOtp->delete();
 
-            return response()->json(['message' => 'Account created successfully']);
+            $options = $this->generateWebAuthnRegisterOptions($user);
+
+            $this->setError("Account created successfully");
+
+            // Session-ID an den Client senden
+            $sessionId = session()->getId();
+
+            $response = response()->json([
+                'message' => 'Account created successfully',
+                'options' => $options,
+                'webauthnRegister' => true,
+                'sessionId' => $sessionId
+            ]);
+
+            return $response;
         }
 
         return response()->json(['message' => 'Invalid OTP'], 422);
     }
 
-    public function webauthnRegister(Request $request)
+    /**
+     * Create a personal team for the user.
+     */
+    protected function createTeam(User $user): void
     {
-        $user = Auth::user();
+        $user->ownedTeams()->save(Team::forceCreate([
+            'user_id' => $user->id,
+            'name' => explode(' ', $user->name, 2)[0] . "'s Team",
+            'personal_team' => true,
+        ]));
+    }
 
-        $rpEntity = new PublicKeyCredentialRpEntity(
-            config('app.name'),
-            'localhost'
-        );
-
-        $userEntity = new PublicKeyCredentialUserEntity(
-            $user->email,
-            $user->id,
-            $user->name
-        );
+    protected function generateWebAuthnRegisterOptions($user)
+    {
+        $rpEntity = new PublicKeyCredentialRpEntity(config('app.name'), config('app.url', 'laravel-passkeys2.test'));
+        $userEntity = new PublicKeyCredentialUserEntity($user->email, base64_encode($user->id), $user->name);
 
         $authenticatorSelection = new AuthenticatorSelectionCriteria();
-
-        $challenge = random_bytes(32);
+        $challenge = strtr(base64_encode(random_bytes(32)), '+/', '-_'); // URL-safe Base64 encoding
 
         $publicKeyCredentialParametersList = [
             PublicKeyCredentialParameters::create('public-key', Algorithms::COSE_ALGORITHM_ES256K),
@@ -145,54 +398,111 @@ class AuthController extends Controller
 
         session(['webauthn.register' => serialize($options)]);
 
-        return response()->json($options);
+        return $options;
     }
 
-    public function webauthnAuthenticate(Request $request)
+    /**
+     * Verarbeitet die Antwort der WebAuthn-Registrierung.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function webauthnRegisterResponse(Request $request, ServerRequestInterface $serverRequest)
     {
-        $user = Auth::user();
+        try {
+            $sessionId = $request->input('sessionId');
 
-        $challenge = random_bytes(32);
+            if (!$sessionId) {
+                throw new \Exception('Session ID is missing.');
+            }
 
-        $options = new PublicKeyCredentialRequestOptions(
-            $challenge,
-            'localhost',
-            $user->credentials->pluck('id')->toArray(),
-            'preferred',
-            60000,
-            new AuthenticationExtensions()
-        );
+            session()->setId($sessionId);
+            session()->start();
 
-        session(['webauthn.authenticate' => serialize($options)]);
+            $pkSourceRepo = new CredentialSourceRepository();
 
-        return response()->json($options);
+            $attestationManager = AttestationStatementSupportManager::create();
+            $attestationManager->add(NoneAttestationStatementSupport::create());
+
+            $responseValidator = AuthenticatorAttestationResponseValidator::create(
+                $attestationManager,
+                $pkSourceRepo,
+                IgnoreTokenBindingHandler::create(),
+                ExtensionOutputCheckerHandler::create(),
+            );
+
+            $pkCredentialLoader = PublicKeyCredentialLoader::create(
+                AttestationObjectLoader::create($attestationManager)
+            );
+
+            $user = Auth::user();
+
+            // Überprüfen Sie die gesendeten Daten
+            $credentialData = $request->input('credentialData');
+            //dump("credential Data: ", $credentialData);
+
+            // JSON-Encoding der Daten
+            $jsoncredentialData = json_encode($credentialData);
+            //dump("JSON Encoded Assertion Data: ", $jsoncredentialData);
+
+            // Vor dem Laden des PublicKeyCredentials
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('JSON encoding error: ' . json_last_error_msg());
+            }
+
+            $publicKeyCredential = $pkCredentialLoader->load($jsoncredentialData);
+            //dump("Public Key Credential loaded: ", $publicKeyCredential);
+
+            $authenticatorAttestationResponse = $publicKeyCredential->getResponse();
+
+            $optionsSerialized = session('webauthn.register');
+
+            $options = unserialize($optionsSerialized);
+
+            // Extrahieren Sie relevante Informationen für das Debugging
+            $optionsArray = $options->jsonSerialize();
+
+            $publicKeyCredentialSource = $responseValidator->check(
+                $authenticatorAttestationResponse,
+                $options,
+                $serverRequest
+            );
+
+            $pkSourceRepo->saveCredentialSource($publicKeyCredentialSource);
+
+            return response()->json(['message' => 'Registration successful']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'An error occurred during registration', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    public function webauthnRegisterResponse(Request $request)
+
+    /**
+     * Setzt eine Fehlermeldung.
+     *
+     * @param string $message
+     * @return void
+     */
+    public function setError($message)
     {
-        $user = Auth::user();
-
-        $attestation = $this->serializer->deserialize($request->input('credential'), AuthenticatorAttestationResponse::class, 'json');
-        $options = unserialize(session('webauthn.register'));
-
-        $authenticator = new AuthenticatorAttestationResponse();
-        $publicKeyCredentialSource = $authenticator->validate($attestation, $options);
-
-        $user->addCredential($publicKeyCredentialSource);
-
-        return response()->json(['message' => 'Registration successful']);
+        $this->errorMessage = $message;
     }
 
-    public function webauthnAuthenticateResponse(Request $request)
+
+    protected function processBase64Encoding(&$data)
     {
-        $user = Auth::user();
-
-        $assertion = $this->serializer->deserialize($request->input('credential'), AuthenticatorAssertionResponse::class, 'json');
-        $options = unserialize(session('webauthn.authenticate'));
-
-        $authenticator = new AuthenticatorAssertionResponse();
-        $authenticator->validate($assertion, $options, $user->credentials);
-
-        return response()->json(['message' => 'Authentication successful']);
+        foreach ($data as $key => &$value) {
+            if (is_array($value)) {
+                $this->processBase64Encoding($value);
+            } else {
+                // Entfernen von '=' Zeichen
+                $value = str_replace('=', '', $value);
+                // Ersetzen von URL-sicheren Base64-Zeichen durch Standard Base64-Zeichen
+                //$value = str_replace(['-', '_'], ['+', '/'], $value);
+                // Polsterung hinzufügen, um sicherzustellen, dass die Länge durch 4 teilbar ist
+                $value = str_pad($value, strlen($value) % 4, '=', STR_PAD_RIGHT);
+            }
+        }
     }
+
 }

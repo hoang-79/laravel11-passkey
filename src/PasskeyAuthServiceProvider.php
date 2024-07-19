@@ -5,6 +5,8 @@ namespace Hoang\PasskeyAuth;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Hoang\PasskeyAuth\Http\Livewire\LoginForm;
+use Hoang\PasskeyAuth\Console\Commands\InstallPasskeyAuth;
+
 
 class PasskeyAuthServiceProvider extends ServiceProvider
 {
@@ -15,11 +17,19 @@ class PasskeyAuthServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__.'/../config/passkey.php' => config_path('passkey.php'),
         ]);
+        // Publish the migrations
+        $this->publishes([
+            __DIR__ . '/../database/migrations/' => database_path('migrations')
+        ], 'migrations');
         Livewire::component('login-form', LoginForm::class);
     }
 
     public function register()
     {
         $this->mergeConfigFrom(__DIR__.'/../config/passkey.php', 'passkey');
+        // Register the command
+        $this->commands([
+            InstallPasskeyAuth::class,
+        ]);
     }
 }
