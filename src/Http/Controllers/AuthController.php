@@ -211,15 +211,10 @@ class AuthController extends Controller
 
             // Load assertion data
             $jsonAssertionData = json_encode($assertionData);
-            dump("JSON Encoded Assertion Data: ", $jsonAssertionData);
-
 
             // Deserialize assertion data
             $publicKeyCredential = $serializer->deserialize($jsonAssertionData, PublicKeyCredential::class, 'json');
-            dump("Public Key Credential loaded: ", $publicKeyCredential);
-
             $authenticatorAssertionResponse = $publicKeyCredential->getResponse();
-            dump("Authenticator Assertion Response: ", $authenticatorAssertionResponse);
 
             if (!$authenticatorAssertionResponse instanceof AuthenticatorAssertionResponse) {
                 throw ValidationException::withMessages([
@@ -229,16 +224,13 @@ class AuthController extends Controller
 
             // Retrieve stored options
             $optionsSerialized = session(self::CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY);
-            dump("Options Serialized from Session: ", $optionsSerialized);
 
             $options = $optionsSerialized; // Use the array directly
-            dump("Options Unserialized: ", $options);
 
             // Ensure allowCredentials is an array of arrays
             $options['allowCredentials'] = array_map(function ($credential) {
                 return $credential->jsonSerialize();
             }, $options['allowCredentials']);
-            dump("Processed allowCredentials: ", $options['allowCredentials']);
 
             // Validate the response
             $publicKeyCredentialSource = $responseValidator->check(
@@ -248,23 +240,19 @@ class AuthController extends Controller
                 $serverRequest,
                 $authenticatorAssertionResponse->getUserHandle(),
             );
-            dump("Public Key Credential Source: ", $publicKeyCredentialSource);
 
             // Remove stored options
             $request->session()->forget(self::CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY);
 
             $getUserHandle = base64_decode($publicKeyCredentialSource->getUserHandle());
 
-            dump("getUserHandle: " . $getUserHandle);
             // Authenticate the user
             $user = User::findOrFail($getUserHandle);
-            dump("User found: ", $user);
 
             Auth::login($user);
 
             return response()->json(['message' => 'Authentication successful']);
         } catch (\Exception $e) {
-            dump("Fehler bei der Verarbeitung der WebAuthn-Authentifizierungsantwort: " . $e->getMessage());
             return response()->json(['message' => 'An error occurred during authentication', 'error' => $e->getMessage()], 500);
         }
     }
