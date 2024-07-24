@@ -58,17 +58,17 @@ class InstallPasskeyAuth extends Command
             $contents = str_replace($search, $replace, $contents);
         }
 
-        $backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
-        foreach ($changes as $search => $replace) {
+        //$backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
+        /*foreach ($changes as $search => $replace) {
             $backup .= str_replace("//", "", $replace) . "\n";
-        }
+        }*/
 
-        $backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
-        foreach ($changes as $search => $replace) {
+        //$backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
+        /*foreach ($changes as $search => $replace) {
             $backup .= "// " . $search . "\n";
         }
 
-        file_put_contents($path, $backup . $contents);
+        file_put_contents($path, $backup . $contents);*/
     }
 
     protected function updateJetstreamConfig()
@@ -90,17 +90,17 @@ class InstallPasskeyAuth extends Command
             $contents = str_replace($search, $replace, $contents);
         }
 
-        $backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
-        foreach ($changes as $search => $replace) {
+        //$backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
+        /*foreach ($changes as $search => $replace) {
             $backup .= str_replace("//", "", $replace) . "\n";
-        }
+        }*/
 
-        $backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
-        foreach ($changes as $search => $replace) {
+        //$backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
+        /*foreach ($changes as $search => $replace) {
             $backup .= "// " . $search . "\n";
         }
 
-        file_put_contents($path, $backup . $contents);
+        file_put_contents($path, $backup . $contents);*/
     }
 
     protected function updateAuthConfig()
@@ -118,13 +118,13 @@ class InstallPasskeyAuth extends Command
         );
 
         // Add the new 'users' provider for PasskeyAuth
-        $newProvider = "'users' => [\n            'driver' => 'eloquent-webauthn',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n            'password_fallback' => true,\n        ],\n";
+        //$newProvider = "'users' => [\n            'driver' => 'eloquent-webauthn',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n            'password_fallback' => true,\n        ],\n";
 
-        $backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $newProvider . "\n/**\n* Backup: Originale auskommentiert\n*/\n" . "/*\n'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],\n*/";
+        //$backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $newProvider . "\n/**\n* Backup: Originale auskommentiert\n*/\n" . "/*\n'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],\n*/";
 
-        $contents = str_replace("'providers' => [", "'providers' => [\n" . $newProvider, $contents);
+        //$contents = str_replace("'providers' => [", "'providers' => [\n" . $newProvider, $contents);
 
-        file_put_contents($path, $backup . $contents);
+        //file_put_contents($path, $backup . $contents);
     }
 
     protected function updateAppConfig()
@@ -190,7 +190,7 @@ class InstallPasskeyAuth extends Command
         $contents = file_get_contents($path);
 
         // Create a backup of the original configuration
-        $backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
+        //$backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
 
         $search = '<a
                                     href="{{ route(\'login\') }}"
@@ -218,11 +218,11 @@ class InstallPasskeyAuth extends Command
         $contents = str_replace($search, $replace, $contents);
 
         // Add Passkey list comment
-        $passkeyComment = "/**\n* Geändert von Passkey\n*/\n" . $contents;
-        $contents = $passkeyComment . $contents;
+        //$passkeyComment = "/**\n* Geändert von Passkey\n*/\n" . $contents;
+        //$contents = $passkeyComment . $contents;
 
         // Save the backup and the new configuration
-        file_put_contents($path, $backup . $contents);
+        //file_put_contents($path, $backup . $contents);
     }
 
 
@@ -234,7 +234,7 @@ class InstallPasskeyAuth extends Command
         $contents = file_get_contents($path);
 
         // Backup the original configuration
-        $backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
+        //$backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
 
         $search = 'return [';
         $replace = 'return [
@@ -243,11 +243,11 @@ class InstallPasskeyAuth extends Command
         $contents = str_replace($search, $replace, $contents);
 
         // Add Passkey list comment
-        $passkeyComment = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $contents;
-        $contents = $passkeyComment . $contents;
+        //$passkeyComment = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $contents;
+        //$contents = $passkeyComment . $contents;
 
         // Save the backup and the new configuration
-        file_put_contents($path, $backup . $contents);
+        //file_put_contents($path, $backup . $contents);
     }
 
 
