@@ -370,7 +370,7 @@ class AuthController extends Controller
 
     protected function generateWebAuthnRegisterOptions($user)
     {
-        $rpEntity = new PublicKeyCredentialRpEntity(config('app.name'), config('app.url', 'laravel-passkeys2.test'));
+        $rpEntity = new PublicKeyCredentialRpEntity(config('app.name'), config('app.url', 'localhost'));
         $userEntity = new PublicKeyCredentialUserEntity($user->email, base64_encode($user->id), $user->name);
 
         $authenticatorSelection = new AuthenticatorSelectionCriteria();
@@ -410,17 +410,16 @@ class AuthController extends Controller
     public function webauthnRegisterResponse(Request $request, ServerRequestInterface $serverRequest)
     {
         try {
+            // Retrieve session ID
             $sessionId = $request->input('sessionId');
-
-            if (!$sessionId) {
-                throw new \Exception('Session ID is missing.');
-            }
 
             session()->setId($sessionId);
             session()->start();
 
+            // Create CredentialSourceRepository
             $pkSourceRepo = new CredentialSourceRepository();
 
+            // Create AttestationStatementSupportManager
             $attestationManager = AttestationStatementSupportManager::create();
             $attestationManager->add(NoneAttestationStatementSupport::create());
 
@@ -431,37 +430,51 @@ class AuthController extends Controller
                 ExtensionOutputCheckerHandler::create(),
             );
 
-            $pkCredentialLoader = PublicKeyCredentialLoader::create(
-                AttestationObjectLoader::create($attestationManager)
-            );
+            // Create WebauthnSerializerFactory with AttestationStatementSupportManager
+            $serializerFactory = new WebauthnSerializerFactory($attestationManager);
 
-            $user = Auth::user();
+            $serializer = $serializerFactory->create();
 
-            // Überprüfen Sie die gesendeten Daten
             $credentialData = $request->input('credentialData');
-            //dump("credential Data: ", $credentialData);
+
+            // Adjust the data to remove padding and replace URL-safe Base64 characters
+            $this->processBase64Encoding($credentialData);
 
             // JSON-Encoding der Daten
-            $jsoncredentialData = json_encode($credentialData);
-            //dump("JSON Encoded Assertion Data: ", $jsoncredentialData);
+            $jsonCredentialData = json_encode($credentialData);
 
             // Vor dem Laden des PublicKeyCredentials
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('JSON encoding error: ' . json_last_error_msg());
             }
 
-            $publicKeyCredential = $pkCredentialLoader->load($jsoncredentialData);
-            //dump("Public Key Credential loaded: ", $publicKeyCredential);
+            // Deserialize credential data
+            $publicKeyCredential = $serializer->deserialize($jsonCredentialData, PublicKeyCredential::class, 'json');
 
             $authenticatorAttestationResponse = $publicKeyCredential->getResponse();
 
+            if (!$authenticatorAttestationResponse instanceof AuthenticatorAttestationResponse) {
+                throw ValidationException::withMessages([
+                    'username' => 'Invalid response type',
+                ]);
+            }
+
+            // Retrieve stored options
             $optionsSerialized = session('webauthn.register');
 
-            $options = unserialize($optionsSerialized);
+            // Ensure the options are in JSON format
+            $optionsSerialized = unserialize($optionsSerialized);
 
-            // Extrahieren Sie relevante Informationen für das Debugging
-            $optionsArray = $options->jsonSerialize();
+            // Debugging the JSON string before deserialization
 
+            // JSON-Encoding der Daten
+            $jsonOptionsSerialized = json_encode($optionsSerialized);
+
+
+            // Deserialize the stored options
+            $options = $serializer->deserialize($jsonOptionsSerialized, PublicKeyCredentialCreationOptions::class, 'json');
+
+            // Validate the response
             $publicKeyCredentialSource = $responseValidator->check(
                 $authenticatorAttestationResponse,
                 $options,
