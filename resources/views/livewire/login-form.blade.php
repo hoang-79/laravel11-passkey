@@ -88,7 +88,6 @@
                             window.location = '/dashboard';
                         } else {
                             console.error('WebAuthn registration failed');
-                            @this.setError('Registration failed');
                         }
                     }).catch(error => {
                         console.error('Error during fetch', error);
@@ -144,7 +143,6 @@
                         if (response.ok) {
                             window.location = '/dashboard';
                         } else {
-                            @this.setError('Login failed');
                         }
                     }).catch(error => {
                     });
@@ -153,43 +151,6 @@
                     console.error('Error during assertion', error);
                 });
         });
-
-        const otpInputs = document.querySelectorAll('.otp-input');
-
-        otpInputs.forEach((input, index) => {
-            input.addEventListener('keydown', (event) => {
-                if (event.key === 'Backspace' && input.value === '') {
-                    if (index > 0) {
-                        otpInputs[index - 1].focus();
-                    }
-                }
-            });
-
-            input.addEventListener('input', (event) => {
-                if (input.value.length === 1 && index < otpInputs.length - 1) {
-                    otpInputs[index + 1].focus();
-                }
-                checkOtpComplete();
-            });
-
-            input.addEventListener('paste', (event) => {
-                event.preventDefault();
-                const pasteData = event.clipboardData.getData('text');
-                if (pasteData.length === 6) {
-                    otpInputs.forEach((input, index) => {
-                        input.value = pasteData[index] || '';
-                    });
-                    checkOtpComplete();
-                }
-            });
-        });
-
-        function checkOtpComplete() {
-            const otpValues = Array.from(otpInputs).map(input => input.value).join('');
-            if (otpValues.length === 6) {
-                document.getElementById('submit-button').click();
-            }
-        }
     });
 
     function arrayBufferToBase64(buffer) {
