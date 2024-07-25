@@ -293,9 +293,9 @@ class InstallPasskeyAuth extends Command
         $path = base_path('bootstrap/app.php');
         $contents = file_get_contents($path);
 
-        $search = 'return [';
-        $replace = "return [
-    Hoang79\PasskeyAuth\PasskeyAuthServiceProvider::class,";
+        $search = '];';
+        $replace = "Hoang79\PasskeyAuth\PasskeyAuthServiceProvider::class,
+        ];";
 
         // Perform the replacement to add the service provider
         $contents = str_replace($search, $replace, $contents);
