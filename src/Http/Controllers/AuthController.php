@@ -24,19 +24,13 @@ use Webauthn\AuthenticationExtensions\AuthenticationExtensions;
 use Hoang79\PasskeyAuth\Models\TemporaryEmailOtp;
 use Hoang79\PasskeyAuth\Mail\SendOtpMail;
 use Hoang79\PasskeyAuth\Models\User;
-use CBOR\Decoder;
-use CBOR\StringStream;
-use Webauthn\CollectedClientData;
 use Webauthn\AttestationObject;
 use Hoang79\PasskeyAuth\Auth\CredentialSourceRepository;
 use Psr\Http\Message\ServerRequestInterface;
 use Webauthn\AttestationStatement\AttestationStatementSupportManager;
 use Webauthn\AttestationStatement\NoneAttestationStatementSupport;
-use Webauthn\AuthenticationExtensions\AuthenticationExtensionsClientInputs;
 use Webauthn\AuthenticationExtensions\ExtensionOutputCheckerHandler;
 use Webauthn\TokenBinding\IgnoreTokenBindingHandler;
-use Webauthn\PublicKeyCredentialLoader;
-use Webauthn\AttestationStatement\AttestationObjectLoader;
 use App\Models\Team;
 use Webauthn\PublicKeyCredentialSource;
 use Cose\Algorithm\Manager;
@@ -54,36 +48,70 @@ use Cose\Algorithm\Signature\EdDSA\Ed256;
 use Cose\Algorithm\Signature\EdDSA\Ed512;
 use Webauthn\AuthenticatorAssertionResponseValidator;
 use Webauthn\Denormalizer\WebauthnSerializerFactory;
-use Psr\Log\LoggerInterface;
-use Symfony\Component\Serializer\SerializerInterface;
 use Webauthn\PublicKeyCredential;
 
-
+/**
+ * Class AuthController
+ *
+ * This controller handles authentication and registration processes using WebAuthn (Passkey) for Laravel applications.
+ */
 class AuthController extends Controller
 {
-    const CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY = 'publicKeyCredentialRequestOptions'; // Add this line
+    /**
+     * Session key for storing credential request options.
+     */
+    const CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY = 'publicKeyCredentialRequestOptions';
 
+    /**
+     * Serializer for handling JSON serialization and deserialization.
+     *
+     * @var \Symfony\Component\Serializer\Serializer
+     */
     protected $serializer;
 
-    public $errorMessage = '';
+    /**
+     * Error message storage.
+     *
+     * @var string
+     */
+    public $Message = '';
 
+    /**
+     * AuthController constructor.
+     *
+     * Initializes the serializer with necessary encoders and normalizers.
+     */
     public function __construct()
     {
         $this->serializer = new Serializer([new ObjectNormalizer()], [new JsonEncoder()]);
     }
 
     /**
-     * Zeigt das Login-Formular an.
+     * Display the login form.
      *
      * @return \Illuminate\View\View
      */
     public function showLoginForm()
     {
-        return view('passkeyauth::login');
+        return $this->redirectToDashboardIfAuthenticated() ?? view('passkeyauth::login');
     }
 
     /**
-     * Handhabt den Login-Prozess.
+     * Redirect the user to the dashboard if they are authenticated.
+     *
+     * @return \Illuminate\Http\RedirectResponse|null
+     */
+    protected function redirectToDashboardIfAuthenticated()
+    {
+        if (Auth::check()) {
+            return redirect('/dashboard');
+        }
+
+        return null;
+    }
+
+    /**
+     * Handle the login process.
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -91,21 +119,22 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         try {
-            // Validierung der Anfrage
+            // Validate the request
             $request->validate(['email' => 'required|email']);
 
-            // Benutzer suchen
+            // Find the user by email
             $user = User::where('email', $request->email)->first();
 
             if ($user) {
                 $options = $this->generateWebAuthnAuthenticateOptions($user);
-                // Session-ID an den Client senden
+                // Send session ID to the client
                 $sessionId = session()->getId();
                 return response()->json([
                     'webauthnLogin' => true,
                     'message' => 'WebAuthn authentication required',
                     'options' => $options,
-                    'sessionId' => $sessionId
+                    'sessionId' => $sessionId,
+                    'redirect' => config('fortify.home', '/dashboard')
                 ]);
             }
 
@@ -116,6 +145,12 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Generate WebAuthn authentication options for a user.
+     *
+     * @param \Hoang79\PasskeyAuth\Models\User $user
+     * @return array
+     */
     protected function generateWebAuthnAuthenticateOptions($user)
     {
         // Ensure the user ID is correctly encoded
@@ -156,10 +191,11 @@ class AuthController extends Controller
     }
 
     /**
-     * Bereitet die WebAuthn-Authentifizierung vor.
+     * Prepare WebAuthn authentication response.
      *
      * @param \Illuminate\Http\Request $request
-     * @return \Webauthn\PublicKeyCredentialRequestOptions
+     * @param \Psr\Http\Message\ServerRequestInterface $serverRequest
+     * @return \Illuminate\Http\JsonResponse
      */
     public function webauthnAuthenticateResponse(Request $request, ServerRequestInterface $serverRequest)
     {
@@ -218,7 +254,7 @@ class AuthController extends Controller
 
             if (!$authenticatorAssertionResponse instanceof AuthenticatorAssertionResponse) {
                 throw ValidationException::withMessages([
-                    'username' => 'Invalid response type',
+                    'email' => 'Invalid response type',
                 ]);
             }
 
@@ -257,16 +293,8 @@ class AuthController extends Controller
         }
     }
 
-
-
-
-
-
-
-
-
     /**
-     * Handhabt die Registrierung eines neuen Benutzers.
+     * Handle the registration of a new user.
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -281,8 +309,6 @@ class AuthController extends Controller
             ['otp' => $otp] // Data to update or create
         );
 
-        dump("OTP erstellt: " . $otp);
-
         try {
             Mail::to($request->email)->send(new SendOtpMail($otp));
             $this->setError("OTP-E-Mail gesendet");
@@ -295,7 +321,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Verifiziert das eingegebene OTP.
+     * Verify the provided OTP.
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -316,29 +342,27 @@ class AuthController extends Controller
                 'password' => Hash::make('password') // Default password
             ]);
 
-
             Auth::login($user);
 
             $this->createTeam($user);
 
-            // OTP nach erfolgreicher Verifizierung löschen
+            // Delete OTP after successful verification
             $temporaryOtp->delete();
 
             $options = $this->generateWebAuthnRegisterOptions($user);
 
             $this->setError("Account created successfully");
 
-            // Session-ID an den Client senden
+            // Send session ID to the client
             $sessionId = session()->getId();
 
-            $response = response()->json([
+            return response()->json([
                 'message' => 'Account created successfully',
                 'options' => $options,
                 'webauthnRegister' => true,
-                'sessionId' => $sessionId
+                'sessionId' => $sessionId,
+                'redirect' => config('fortify.home', '/dashboard')
             ]);
-
-            return $response;
         }
 
         return response()->json(['message' => 'Invalid OTP'], 422);
@@ -346,6 +370,8 @@ class AuthController extends Controller
 
     /**
      * Create a personal team for the user.
+     *
+     * @param \Hoang79\PasskeyAuth\Models\User $user
      */
     protected function createTeam(User $user): void
     {
@@ -356,6 +382,12 @@ class AuthController extends Controller
         ]));
     }
 
+    /**
+     * Generate WebAuthn registration options for a user.
+     *
+     * @param \Hoang79\PasskeyAuth\Models\User $user
+     * @return \Webauthn\PublicKeyCredentialCreationOptions
+     */
     protected function generateWebAuthnRegisterOptions($user)
     {
         $rpEntity = new PublicKeyCredentialRpEntity(config('app.name'), config('app.url', 'localhost'));
@@ -390,9 +422,10 @@ class AuthController extends Controller
     }
 
     /**
-     * Verarbeitet die Antwort der WebAuthn-Registrierung.
+     * Process the response for WebAuthn registration.
      *
      * @param \Illuminate\Http\Request $request
+     * @param \Psr\Http\Message\ServerRequestInterface $serverRequest
      * @return \Illuminate\Http\JsonResponse
      */
     public function webauthnRegisterResponse(Request $request, ServerRequestInterface $serverRequest)
@@ -420,7 +453,6 @@ class AuthController extends Controller
 
             // Create WebauthnSerializerFactory with AttestationStatementSupportManager
             $serializerFactory = new WebauthnSerializerFactory($attestationManager);
-
             $serializer = $serializerFactory->create();
 
             $credentialData = $request->input('credentialData');
@@ -428,10 +460,10 @@ class AuthController extends Controller
             // Adjust the data to remove padding and replace URL-safe Base64 characters
             $this->processBase64Encoding($credentialData);
 
-            // JSON-Encoding der Daten
+            // JSON-Encoding of the data
             $jsonCredentialData = json_encode($credentialData);
 
-            // Vor dem Laden des PublicKeyCredentials
+            // Before loading the PublicKeyCredentials
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new \Exception('JSON encoding error: ' . json_last_error_msg());
             }
@@ -454,10 +486,7 @@ class AuthController extends Controller
             $optionsSerialized = unserialize($optionsSerialized);
 
             // Debugging the JSON string before deserialization
-
-            // JSON-Encoding der Daten
             $jsonOptionsSerialized = json_encode($optionsSerialized);
-
 
             // Deserialize the stored options
             $options = $serializer->deserialize($jsonOptionsSerialized, PublicKeyCredentialCreationOptions::class, 'json');
@@ -471,39 +500,43 @@ class AuthController extends Controller
 
             $pkSourceRepo->saveCredentialSource($publicKeyCredentialSource);
 
-            return response()->json(['message' => 'Registration successful']);
+            return response()->json([
+                'message' => 'Registration successful',
+                'redirect' => config('fortify.home', '/dashboard')
+            ]);
         } catch (\Exception $e) {
             return response()->json(['message' => 'An error occurred during registration', 'error' => $e->getMessage()], 500);
         }
     }
 
-
     /**
-     * Setzt eine Fehlermeldung.
+     * Set an error message.
      *
      * @param string $message
      * @return void
      */
     public function setError($message)
     {
-        $this->errorMessage = $message;
+        $this->Message = $message;
     }
 
-
+    /**
+     * Process Base64 encoding for given data recursively.
+     *
+     * @param array &$data
+     * @return void
+     */
     protected function processBase64Encoding(&$data)
     {
         foreach ($data as $key => &$value) {
             if (is_array($value)) {
                 $this->processBase64Encoding($value);
             } else {
-                // Entfernen von '=' Zeichen
+                // Remove '=' characters
                 $value = str_replace('=', '', $value);
-                // Ersetzen von URL-sicheren Base64-Zeichen durch Standard Base64-Zeichen
-                //$value = str_replace(['-', '_'], ['+', '/'], $value);
-                // Polsterung hinzufügen, um sicherzustellen, dass die Länge durch 4 teilbar ist
+                // Add padding to ensure the length is divisible by 4
                 $value = str_pad($value, strlen($value) % 4, '=', STR_PAD_RIGHT);
             }
         }
     }
-
 }

@@ -5,31 +5,69 @@ namespace Hoang79\PasskeyAuth\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 
+/**
+ * Class InstallPasskeyAuth
+ *
+ * This command installs the PasskeyAuth package by updating configuration files and copying necessary migrations.
+ *
+ * @package Hoang79\PasskeyAuth\Console\Commands
+ */
 class InstallPasskeyAuth extends Command
 {
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
     protected $signature = 'passkey:install';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
     protected $description = 'Install the PasskeyAuth package';
 
+    /**
+     * Create a new command instance.
+     *
+     * @return void
+     */
     public function __construct()
     {
         parent::__construct();
     }
 
+    /**
+     * Execute the console command.
+     *
+     * @return void
+     */
     public function handle()
     {
         $this->info('Installing PasskeyAuth package...');
 
+        // Update configuration files
         $this->updateFortifyConfig();
         $this->updateJetstreamConfig();
         $this->updateAuthConfig();
         $this->updateAppConfig();
         $this->updateWelcomeView();
         $this->updateProvidersConfig();
+
+        // Copy migration files
         $this->copyMigrations();
 
         $this->info('PasskeyAuth package installed successfully.');
     }
 
+    /**
+     * Update the Fortify configuration.
+     *
+     * This method modifies the fortify.php configuration file to comment out certain features and enable profile updates.
+     *
+     * @return void
+     */
     protected function updateFortifyConfig()
     {
         $this->info('Updating fortify.php config...');
@@ -37,40 +75,45 @@ class InstallPasskeyAuth extends Command
         $path = config_path('fortify.php');
         $contents = file_get_contents($path);
 
-        $changes = [
-            'Features::registration(),' => '//Features::registration(),',
-            'Features::resetPasswords(),' => '//Features::resetPasswords(),',
-            'Features::emailVerification(),' => '//Features::emailVerification(),',
-            'Features::updateProfileInformation(),' => 'Features::updateProfileInformation(),',
-            'Features::updatePasswords(),' => '//Features::updatePasswords(),',
-            'Features::twoFactorAuthentication([' . PHP_EOL .
-            "            'confirm' => true," . PHP_EOL .
-            "            'confirmPassword' => true," . PHP_EOL .
-            "            // 'window' => 0," . PHP_EOL .
-            '        ]),' => '/*Features::twoFactorAuthentication([' . PHP_EOL .
-                "            'confirm' => true," . PHP_EOL .
-                "            'confirmPassword' => true," . PHP_EOL .
-                "            // 'window' => 0," . PHP_EOL .
-                '        ]),*/'
+        // Define search and replace arrays for configuration changes
+        $search = [
+            'Features::registration()',
+            'Features::resetPasswords()',
+            'Features::emailVerification()',
+            'Features::updateProfileInformation()',
+            'Features::updatePasswords()',
+            'Features::twoFactorAuthentication([',
+            'confirm' => true,
+            'confirmPassword' => true,
+            "'window' => 0,",
+            ']),'
+        ];
+        $replace = [
+            '//Features::registration()',
+            '//Features::resetPasswords()',
+            '//Features::emailVerification()',
+            'Features::updateProfileInformation()',
+            '//Features::updatePasswords()',
+            '/*Features::twoFactorAuthentication([',
+            "'confirm' => true,",
+            "'confirmPassword' => true,",
+            "// 'window' => 0,",
+            ']),*/'
         ];
 
-        foreach ($changes as $search => $replace) {
-            $contents = str_replace($search, $replace, $contents);
-        }
+        // Perform replacements in the configuration file
+        $contents = str_replace($search, $replace, $contents);
 
-        //$backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
-        /*foreach ($changes as $search => $replace) {
-            $backup .= str_replace("//", "", $replace) . "\n";
-        }*/
-
-        //$backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
-        /*foreach ($changes as $search => $replace) {
-            $backup .= "// " . $search . "\n";
-        }
-
-        file_put_contents($path, $backup . $contents);*/
+        file_put_contents($path, $contents);
     }
 
+    /**
+     * Update the Jetstream configuration.
+     *
+     * This method modifies the jetstream.php configuration file to comment out certain features and enable profile photos.
+     *
+     * @return void
+     */
     protected function updateJetstreamConfig()
     {
         $this->info('Updating jetstream.php config...');
@@ -78,31 +121,37 @@ class InstallPasskeyAuth extends Command
         $path = config_path('jetstream.php');
         $contents = file_get_contents($path);
 
-        $changes = [
-            'Features::termsAndPrivacyPolicy(),' => '// Features::termsAndPrivacyPolicy(),',
-            'Features::profilePhotos(),' => 'Features::profilePhotos(),',
-            'Features::api(),' => '//Features::api(),',
-            "Features::teams(['invitations' => true'])" => "Features::teams(['invitations']) => true",
-            'Features::accountDeletion(),' => 'Features::accountDeletion(),'
+        // Define search and replace arrays for configuration changes
+        $search = [
+            'Features::termsAndPrivacyPolicy()',
+            'Features::profilePhotos()',
+            'Features::api()',
+            'Features::teams([',
+            'invitations' => true,
+            'Features::accountDeletion()'
+        ];
+        $replace = [
+            '// Features::termsAndPrivacyPolicy()',
+            'Features::profilePhotos()',
+            '//Features::api()',
+            'Features::teams([',
+            'invitations' => true,
+            'Features::accountDeletion()'
         ];
 
-        foreach ($changes as $search => $replace) {
-            $contents = str_replace($search, $replace, $contents);
-        }
+        // Perform replacements in the configuration file
+        $contents = str_replace($search, $replace, $contents);
 
-        //$backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n";
-        /*foreach ($changes as $search => $replace) {
-            $backup .= str_replace("//", "", $replace) . "\n";
-        }*/
-
-        //$backup .= "/**\n* Backup: Originale auskommentiert\n*/\n";
-        /*foreach ($changes as $search => $replace) {
-            $backup .= "// " . $search . "\n";
-        }
-
-        file_put_contents($path, $backup . $contents);*/
+        file_put_contents($path, $contents);
     }
 
+    /**
+     * Update the Auth configuration.
+     *
+     * This method modifies the auth.php configuration file to use the eloquent-webauthn driver.
+     *
+     * @return void
+     */
     protected function updateAuthConfig()
     {
         $this->info('Updating auth.php config...');
@@ -110,23 +159,34 @@ class InstallPasskeyAuth extends Command
         $path = config_path('auth.php');
         $contents = file_get_contents($path);
 
-        // Backup the original 'users' provider
-        $contents = str_replace(
-            "'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],",
-            "/*\n'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],\n*/",
-            $contents
-        );
+        // Define search and replace arrays for configuration changes
+        $search = [
+            "'providers' => [",
+            "'driver' => 'eloquent',",
+            "'model' => env('AUTH_MODEL', App\Models\User::class),"
+        ];
+        $replace = [
+            "'providers' => [",
+            "'driver' => 'eloquent-webauthn',",
+            "'model' => env('AUTH_MODEL', App\Models\User::class),",
+            "'password_fallback' => true,",
+            "/*'driver' => 'eloquent',",
+            "'model' => env('AUTH_MODEL', App\Models\User::class),*/"
+        ];
 
-        // Add the new 'users' provider for PasskeyAuth
-        //$newProvider = "'users' => [\n            'driver' => 'eloquent-webauthn',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n            'password_fallback' => true,\n        ],\n";
+        // Perform replacements in the configuration file
+        $contents = str_replace($search, $replace, $contents);
 
-        //$backup = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $newProvider . "\n/**\n* Backup: Originale auskommentiert\n*/\n" . "/*\n'users' => [\n            'driver' => 'eloquent',\n            'model' => env('AUTH_MODEL', App\Models\User::class),\n        ],\n*/";
-
-        //$contents = str_replace("'providers' => [", "'providers' => [\n" . $newProvider, $contents);
-
-        //file_put_contents($path, $backup . $contents);
+        file_put_contents($path, $contents);
     }
 
+    /**
+     * Update the app.php configuration.
+     *
+     * This method modifies the bootstrap/app.php configuration file to set up CSRF token validation and guest redirects.
+     *
+     * @return void
+     */
     protected function updateAppConfig()
     {
         $this->info('Updating app.php config...');
@@ -134,6 +194,7 @@ class InstallPasskeyAuth extends Command
         $path = base_path('bootstrap/app.php');
         $contents = file_get_contents($path);
 
+        // Update CSRF token validation middleware
         if (strpos($contents, 'validateCsrfTokens') === false) {
             $search = '->withMiddleware(function (Middleware $middleware) {';
             $replace = '->withMiddleware(function (Middleware $middleware) {
@@ -148,8 +209,8 @@ class InstallPasskeyAuth extends Command
         ]);';
             $contents = str_replace($search, $replace, $contents);
         } else {
-        $search = '$middleware->validateCsrfTokens(except: [';
-        $replace = '$middleware->validateCsrfTokens(except: [
+            $search = '$middleware->validateCsrfTokens(except: [';
+            $replace = '$middleware->validateCsrfTokens(except: [
             \'passkey\',
             \'custom-register\',
             \'verify-otp\',
@@ -158,9 +219,10 @@ class InstallPasskeyAuth extends Command
             \'webauthn-authenticate\',
             \'webauthn-authenticate-response\',';
 
-        $contents = str_replace($search, $replace, $contents);
-    }
+            $contents = str_replace($search, $replace, $contents);
+        }
 
+        // Update guest redirect middleware
         if (strpos($contents, 'redirectGuestsTo') === false) {
             $search = '->withMiddleware(function (Middleware $middleware) {';
             $replace = '->withMiddleware(function (Middleware $middleware) {
@@ -172,16 +234,16 @@ class InstallPasskeyAuth extends Command
             $contents = str_replace($search, $replace, $contents);
         }
 
-        // Add service provider
-        if (strpos($contents, "Hoang\PasskeyAuth\PasskeyAuthServiceProvider::class") === false) {
-            $search = "return [";
-            $replace = "return [\n    Hoang\PasskeyAuth\PasskeyAuthServiceProvider::class,";
-            $contents = str_replace($search, $replace, $contents);
-        }
-
         file_put_contents($path, $contents);
     }
 
+    /**
+     * Update the welcome.blade.php view.
+     *
+     * This method modifies the welcome.blade.php file to change the login route to the passkey route.
+     *
+     * @return void
+     */
     protected function updateWelcomeView()
     {
         $this->info('Updating welcome.blade.php view...');
@@ -189,69 +251,65 @@ class InstallPasskeyAuth extends Command
         $path = resource_path('views/welcome.blade.php');
         $contents = file_get_contents($path);
 
-        // Create a backup of the original configuration
-        //$backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
-
         $search = '<a
-                                    href="{{ route(\'login\') }}"
-                                    class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
-                                >
-                                    Log in
-                                </a>
-
-                                @if (Route::has(\'register\'))
-                                    <a
-                                        href="{{ route(\'register\') }}"
+                                        href="{{ route(\'login\') }}"
                                         class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
                                     >
-                                        Register
+                                        Log in
                                     </a>
-                                @endif';
+
+                                    @if (Route::has(\'register\'))
+                                        <a
+                                            href="{{ route(\'register\') }}"
+                                            class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                        >
+                                            Register
+                                        </a>
+                                    @endif';
 
         $replace = '<a
-                                    href="{{ route(\'passkey\') }}"
-                                    class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
-                                >
-                                    Log in
-                                </a>';
+                                        href="{{ route(\'passkey\') }}"
+                                        class="rounded-md px-3 py-2 text-black ring-1 ring-transparent transition hover:text-black/70 focus:outline-none focus-visible:ring-[#FF2D20] dark:text-white dark:hover:text-white/80 dark:focus-visible:ring-white"
+                                    >
+                                        Log in
+                                    </a>';
 
         $contents = str_replace($search, $replace, $contents);
 
-        // Add Passkey list comment
-        //$passkeyComment = "/**\n* Geändert von Passkey\n*/\n" . $contents;
-        //$contents = $passkeyComment . $contents;
-
-        // Save the backup and the new configuration
-        //file_put_contents($path, $backup . $contents);
+        file_put_contents($path, $contents);
     }
 
-
+    /**
+     * Update the providers in app.php configuration.
+     *
+     * This method adds the PasskeyAuthServiceProvider to the bootstrap/app.php configuration file.
+     *
+     * @return void
+     */
     protected function updateProvidersConfig()
     {
-        $this->info('Updating providers.php config...');
+        $this->info('Updating providers in app.php config...');
 
-        $path = base_path('bootstrap/providers.php');
+        $path = base_path('bootstrap/app.php');
         $contents = file_get_contents($path);
 
-        // Backup the original configuration
-        //$backup = "/**\n* Backup: Originale auskommentiert\n*/\n" . $contents;
-
         $search = 'return [';
-        $replace = 'return [
-    Hoang79\PasskeyAuth\PasskeyAuthServiceProvider::class,';
+        $replace = "return [
+    Hoang79\PasskeyAuth\PasskeyAuthServiceProvider::class,";
 
+        // Perform the replacement to add the service provider
         $contents = str_replace($search, $replace, $contents);
 
-        // Add Passkey list comment
-        //$passkeyComment = "/**\n* Liste von Passkey hinzugefügt\n*/\n" . $contents;
-        //$contents = $passkeyComment . $contents;
-
-        // Save the backup and the new configuration
-        //file_put_contents($path, $backup . $contents);
+        file_put_contents($path, $contents);
     }
 
-
-
+    /**
+     * Copy migration files.
+     *
+     * This method copies the necessary migration files from the package to the application's migration directory.
+     *
+     * @return void
+     */
     protected function copyMigrations()
     {
         $this->info('Copying migration files...');
@@ -265,9 +323,10 @@ class InstallPasskeyAuth extends Command
             '2024_07_17_111856_authenticators.php',
         ];
 
+        // Copy each file to the destination path
         foreach ($files as $file) {
             $filesystem->copy($sourcePath . $file, $destinationPath . $file);
         }
-
     }
 }
+

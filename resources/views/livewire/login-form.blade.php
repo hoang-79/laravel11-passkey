@@ -10,26 +10,26 @@
                     {{ __('Login') }}
                 </x-button>
             </div>
-            @if ($errorMessage)
-                <p class="mt-2 text-sm text-red-600">{{ $errorMessage }}</p>
+            @if ($Message)
+                <p class="mt-2 text-sm text-red-600">{{ $Message }}</p>
             @endif
         </form>
     @elseif ($stage == 'otp')
         <form wire:submit.prevent="submit">
             <div>
                 <x-label for="otp" value="{{ __('OTP') }}" />
-                <x-input id="otp" class="block mt-1 w-full" type="text" wire:model="otp" required />
+                <x-input id="otp" class="block mt-1 w-full" type="text" wire:model="otp" maxlength="6" pattern="^\d{6}(-\d{4})?$" required />
             </div>
             <div class="flex items-center justify-end mt-4">
                 <x-button class="ms-4">
                     {{ __('Verify OTP') }}
                 </x-button>
             </div>
-            @if ($errorMessage)
-                <p class="mt-2 text-sm text-red-600">{{ $errorMessage }}</p>
+            @if ($Message)
+                <p class="mt-2 text-sm text-red-600">{{ $Message }}</p>
             @endif
         </form>
-    @elseif ($stage == 'webauthn')
+    @elseif ($stage == 'webauthnRegister')
         <p class="mt-2 text-sm text-white-600">Register your Device</p>
     @elseif ($stage == 'register')
         <p>{{ __('Email does not exist. Would you like to register?') }}</p>
@@ -44,13 +44,20 @@
     @endif
 </div>
 
+@php
+    $homeUrl = config('fortify.home', '/dashboard');
+@endphp
+
 <script>
     document.addEventListener('livewire:init', function () {
+        // Handler for Registration
         Livewire.on('webauthnRegister', function (data) {
+            console.log('Received data for login:', data);
             const optionsArray = data[0];
             const challenge = data[0].challenge;
             const userId = data[0].user.id
             const sessionId = data[1];
+            const homeUrl = @json($homeUrl);
 
             const options = optionsArray;
             const publicKeyOptions = {
@@ -85,7 +92,7 @@
                     }).then(response => {
                         if (response.ok) {
                             console.log('WebAuthn registration successful');
-                            window.location = '/dashboard';
+                            window.location = homeUrl;
                         } else {
                             console.error('WebAuthn registration failed');
                         }
@@ -100,9 +107,12 @@
 
         // Handler for login
         Livewire.on('webauthnLogin', function (data) {
+            console.log('Received data for login:', data);
             const challenge = data[0].options.challenge;
             const sessionId = data[0].sessionId;
             const optionsArray = data[0].options;
+            const homeUrl = @json($homeUrl);
+
             const publicKeyOptions = {
                 ...optionsArray,
                 challenge: Uint8Array.from(atob(challenge.replace(/_/g, '/').replace(/-/g, '+')), c => c.charCodeAt(0)),
@@ -141,8 +151,9 @@
                         body: JSON.stringify({ assertionData, sessionId })
                     }).then(response => {
                         if (response.ok) {
-                            window.location = '/dashboard';
+                            window.location = homeUrl;
                         } else {
+                            console.error('WebAuthn authentication failed');
                         }
                     }).catch(error => {
                     });
@@ -151,7 +162,19 @@
                     console.error('Error during assertion', error);
                 });
         });
+
+        // Auto-submit OTP form when 6 digits are entered
+        const otpInput = document.getElementById('otp');
+        if (otpInput) {
+            console.log("OTP Input: " + otpInput);
+            otpInput.addEventListener('input', function (event) {
+                if (event.target.value.length === 6) {
+                    Livewire.dispatch('submit');
+                }
+            });
+        }
     });
+
 
     function arrayBufferToBase64(buffer) {
         let binary = '';

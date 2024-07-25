@@ -19,7 +19,7 @@ class SendOtpMail extends Mailable
 
     public function build()
     {
-        return $this->subject('Your OTP Code')
+        return $this->subject(env("APP_NAME", "Passkey").' - E-Mail Verification')
             ->view('passkeyauth::emails.otp');
     }
 }

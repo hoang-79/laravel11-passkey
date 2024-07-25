@@ -6,12 +6,9 @@
 
         <x-validation-errors class="mb-4" />
 
-        @if (session('status'))
-            <div class="mb-4 font-medium text-sm text-green-600 dark:text-green-400">
-                {{ session('status') }}
-            </div>
-        @endif
-
+        @php
+            $Message = "";
+        @endphp
 
         {{--<style>
             .otp-input {
@@ -32,5 +29,8 @@
         </style>--}}
 
         <livewire:login-form />
+        @if ($Message)
+            <p class="mt-2 text-sm text-red-600">{{ $Message }}</p>
+        @endif
     </x-authentication-card>
 </x-guest-layout>

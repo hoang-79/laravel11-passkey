@@ -11,7 +11,7 @@ class LoginForm extends Component
     public $otp = '';
     public $stage = 'passkey';
     public $webauthnOptions;
-    public $errorMessage;
+    public $Message;
 
     public function submit()
     {
@@ -22,6 +22,7 @@ class LoginForm extends Component
                 $this->webauthnOptions = $response->json();
                 $this->stage = 'webauthnLogin';
                 $this->dispatch('webauthnLogin', $this->webauthnOptions);
+                $this->Message = "login";
             } elseif ($response->status() === 404) {
                 $this->stage = 'register';
             } else {
@@ -79,7 +80,7 @@ class LoginForm extends Component
 
     public function setError($message)
     {
-        $this->errorMessage = $message;
+        $this->Message = $message;
     }
 
     public function render()
