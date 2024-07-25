@@ -14,9 +14,7 @@
 
 ## Einführung
 
-Dieses Paket ermöglicht die Verwendung von Passkeys zur Authentifizierung in Laravel 11 Anwendungen. Passkeys sind eine
-benutzerfreundliche und sichere Alternative zu herkömmlichen Passwörtern. Sie können auf Mobilgeräten und in
-Passwortmanagern gespeichert werden und ermöglichen eine bequeme und sichere Anmeldung ohne Passwort.
+Dieses Paket ermöglicht die Verwendung von Passkeys zur Authentifizierung in Laravel 11 Anwendungen. Passkeys sind eine benutzerfreundliche und sichere Alternative zu herkömmlichen Passwörtern. Sie können auf Mobilgeräten und in Passwortmanagern gespeichert werden und ermöglichen eine bequeme und sichere Anmeldung ohne Passwort.
 
 ### Vorteile von Passkeys
 
@@ -49,7 +47,26 @@ Passwortmanagern gespeichert werden und ermöglichen eine bequeme und sichere An
     APP_URL=laravel-passkey3.test
     ```
 
-2. Stellen Sie sicher, dass die notwendigen Migrationen ausgeführt wurden:
+2. Passen Sie den Redirect bei der folgenden Zeile in `config/fortify.php` an:
+
+    ```php
+    'home' => '/dashboard',
+    ```
+
+3. Passen Sie die Mail-Einstellungen in der `.env` Datei an, damit der OTP-Code versendet werden kann:
+
+    ```env
+    MAIL_MAILER=smtp
+    MAIL_HOST=127.0.0.1
+    MAIL_PORT=2525
+    MAIL_USERNAME="${APP_NAME}"
+    MAIL_PASSWORD=null
+    MAIL_ENCRYPTION=null
+    MAIL_FROM_ADDRESS="hello@example.com"
+    MAIL_FROM_NAME="${APP_NAME}"
+    ```
+
+4. Stellen Sie sicher, dass die notwendigen Migrationen ausgeführt wurden:
 
     ```bash
     php artisan migrate
@@ -57,16 +74,20 @@ Passwortmanagern gespeichert werden und ermöglichen eine bequeme und sichere An
 
 ## Nutzung
 
-Nach der Installation und den notwendigen Anpassungen können Benutzer sich mit Passkeys registrieren und anmelden. Die
-Registrierung erfolgt über die Eingabe einer E-Mail-Adresse und das Erhalten eines OTP (One Time Password), gefolgt von
-der Speicherung des Passkeys.
+Nach der Installation und den notwendigen Anpassungen können Benutzer sich mit Passkeys registrieren und anmelden. Die Registrierung erfolgt über die Eingabe einer E-Mail-Adresse und das Erhalten eines OTP (One Time Password), gefolgt von der Speicherung des Passkeys.
 
 Die Anmeldung erfolgt ebenfalls über die Eingabe der E-Mail-Adresse und das Verwenden des gespeicherten Passkeys.
 
+## Zukünftige Features
+
+- OTP nochmals versenden
+- Mit Mobilnummer und SMS anmelden
+
 ## Weitere Informationen
 
-Weitere Informationen zu Passkeys und deren Verwendung finden Sie in der offiziellen Dokumentation zu WebAuthn und den
-Passkey-Standards.
+Weitere Informationen zu Passkeys und deren Verwendung finden Sie in der offiziellen Dokumentation zu WebAuthn und den Passkey-Standards.
+
+---
 
 # Laravel 11 Passkey Authentication
 
@@ -80,9 +101,7 @@ Passkey-Standards.
 
 ## Introduction
 
-This package enables the use of passkeys for authentication in Laravel 11 applications. Passkeys are a user-friendly and
-secure alternative to traditional passwords. They can be stored on mobile devices and password managers, allowing for
-convenient and secure passwordless login.
+This package enables the use of passkeys for authentication in Laravel 11 applications. Passkeys are a user-friendly and secure alternative to traditional passwords. They can be stored on mobile devices and password managers, allowing for convenient and secure passwordless login.
 
 ### Benefits of Passkeys
 
@@ -115,7 +134,26 @@ convenient and secure passwordless login.
     APP_URL=laravel-passkey3.test
     ```
 
-2. Ensure the necessary migrations have been executed:
+2. Adjust the redirect in `config/fortify.php`:
+
+    ```php
+    'home' => '/dashboard',
+    ```
+
+3. Update the mail settings in the `.env` file to enable OTP code sending:
+
+    ```env
+    MAIL_MAILER=smtp
+    MAIL_HOST=127.0.0.1
+    MAIL_PORT=2525
+    MAIL_USERNAME="${APP_NAME}"
+    MAIL_PASSWORD=null
+    MAIL_ENCRYPTION=null
+    MAIL_FROM_ADDRESS="hello@example.com"
+    MAIL_FROM_NAME="${APP_NAME}"
+    ```
+
+4. Ensure the necessary migrations have been executed:
 
     ```bash
     php artisan migrate
@@ -123,10 +161,14 @@ convenient and secure passwordless login.
 
 ## Usage
 
-After installation and necessary adjustments, users can register and log in using passkeys. Registration involves
-entering an email address, receiving a One Time Password (OTP), and saving the passkey.
+After installation and necessary adjustments, users can register and log in using passkeys. Registration involves entering an email address, receiving a One Time Password (OTP), and saving the passkey.
 
 Logging in involves entering the email address and using the saved passkey.
+
+## Future Features
+
+- Resend OTP
+- Sign in with mobile number and SMS
 
 ## Further Information
 
